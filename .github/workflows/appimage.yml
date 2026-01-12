@@ -89,7 +89,7 @@ jobs:
       # -------------------------------------------------
       - name: Build AppImage
         run: |
-          appimage-builder --no fuse --recipe AppImageBuilder.yml
+          appimage-builder --no-fuse --recipe AppImageBuilder.yml
       
       # -------------------------------------------------
       # 6️⃣ Artefakt hochladen
