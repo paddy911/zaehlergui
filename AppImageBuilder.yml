@@ -3,9 +3,9 @@ version: 1
 AppDir:
   path: ./AppDir                     # temporäres Verzeichnis, das appimage‑builder erzeugt
   app_info:
-    id: de.beispiel.zaehlerstaende
-    name: Zählerstände Verwaltung
-    exec: usr/bin/python3
+    id: de.beispiel.zaehlerstaende     # Eindeutige Programm‑ID (Reverse‑Domain‑Name‑Notation)
+    name: Zählerstände Verwaltung     # Programmname
+    exec: usr/bin/python3           # Pfad zur ausführbaren Datei im AppDir
     exec_args: "-m zaehlerstaende"   # ein einziger String, kein Array
     version: "1.0"
     # Die folgenden Felder existieren erst ab v1.1.1 → weglassen bei v1.1.0
