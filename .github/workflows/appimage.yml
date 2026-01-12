@@ -1,28 +1,19 @@
 name: Build AppImage
 
-# -------------------------------------------------
-# 1️⃣ Trigger
-# -------------------------------------------------
 on:
   push:
     branches: [dev]          # oder dein Standard‑Branch
   pull_request:
     branches: [dev]
 
-# -------------------------------------------------
-# 2️⃣ Jobs
-# -------------------------------------------------
 jobs:
   build:
-    runs-on: ubuntu-latest          # Host‑Runner (braucht Docker)
+    runs-on: ubuntu-latest
     container:
-      image: archlinux:latest       # Wir arbeiten in einem Arch‑Container
+      image: archlinux:latest   # Arch‑Container
 
-    # -------------------------------------------------
-    # 3️⃣ Steps (Reihenfolge wichtig!)
-    # -------------------------------------------------
     steps:
-      # ----- Cache für Pacman‑ und Pip‑Pakete -----
+      # ------------------- Cache -------------------
       - name: Cache pacman & pip
         uses: actions/cache@v4
         with:
@@ -31,11 +22,11 @@ jobs:
             ~/.cache/pip
           key: ${{ runner.os }}-arch-pkg-${{ hashFiles('**/*.yml') }}
 
-      # ----- Checkout des Repositories -----
+      # ------------------- Checkout -----------------
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      # ----- System‑Abhängigkeiten installieren -----
+      # ------------------- System‑Dependencies -------
       - name: Install system dependencies
         run: |
           pacman -Sy --noconfirm \
@@ -50,59 +41,39 @@ jobs:
             zsync \
             strace
 
-     # ----- Install appimage‑builder from AUR (ohne sudo) -----
-      - name: Install appimage‑builder from AUR
+      # ------------------- AUR‑Helper & appimage‑builder ----------
+      - name: Install appimage‑builder from AUR (Root‑Switch)
         run: |
-          # -------------------------------------------------
-          # 1️⃣ Build‑Abhängigkeiten, die yay später braucht
-          # -------------------------------------------------
-          #   - go        : zum Kompilieren von yay
-          #   - fakeroot  : makepkg nutzt das intern
+          # 1️⃣ Build‑Abhängigkeiten für yay
           pacman -Sy --noconfirm go fakeroot
 
-          # -------------------------------------------------
-          # 2️⃣ Normalen Nutzer anlegen (UID 1000 ist üblich)
-          # -------------------------------------------------
+          # 2️⃣ Normalen Nutzer anlegen
           useradd -m -u 1000 builder
 
-          # -------------------------------------------------
-          # 3️⃣ Alles als dieser Nutzer ausführen
-          # -------------------------------------------------
+          # 3️⃣ Build‑Phase (nicht root)
           su - builder -c '
             set -euo pipefail
-
-            # ----- AUR‑Helper (yay) bauen, aber NICHT installieren -----
             git clone https://aur.archlinux.org/yay.git
             cd yay
-
-            # -s   → löst Build‑Depends auf (wir haben go bereits)
-            # -f   → zwingt das Erstellen des Pakets, ohne zu fragen
-            # -c   → kein automatisches Installieren (wir machen das selbst)
-            makepkg -sf --noconfirm
-
-            # ----- Manuelles Installieren des gebauten yay-Pakets -----
-            # Das erzeugte Paket liegt im aktuellen Verzeichnis und hat
-            # den Namen etwa: yay-12.5.7-1-x86_64.pkg.tar.zst
-            # Wir benutzen pacman -U (keine sudo‑Abfrage) zum Installieren.
-            pacman -U --noconfirm yay-*-x86_64.pkg.tar.zst
+            makepkg -sf --noconfirm               # nur bauen
             cd ..
-
-            # ----- appimage‑builder‑bin aus dem AUR installieren -----
-            # --no-sudo verhindert, dass yay sudo aufruft.
-            yay -S --no-sudo --noconfirm appimage-builder-bin
           '
 
-          # -------------------------------------------------
-          # 4️⃣ Kontrolle (optional)
-          # -------------------------------------------------
+          # 4️⃣ Installiere das gebaute yay‑Paket als root
+          pacman -U --noconfirm /home/builder/yay/yay-*-x86_64.pkg.tar.zst
+
+          # 5️⃣ appimage‑builder‑bin aus dem AUR installieren (ohne sudo)
+          yay -S --no-sudo --noconfirm appimage-builder-bin
+
+          # 6️⃣ Kontrolle (optional)
           which appimage-builder || echo "⚠️ appimage-builder not found"
 
-      # ----- Build des AppImages -----
+      # ------------------- Build AppImage ----------
       - name: Build AppImage
         run: |
           appimage-builder --recipe AppImageBuilder.yml
 
-      # ----- Artefakt hochladen -----
+      # ------------------- Upload Artefact ----------
       - name: Upload AppImage artifact
         uses: actions/upload-artifact@v4
         with:
