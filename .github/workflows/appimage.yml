@@ -53,25 +53,41 @@ jobs:
     # ----- Install appimage‑builder from AUR (nicht als root) -----
       - name: Install appimage‑builder from AUR
         run: |
-          # 1️⃣ Einen normalen Benutzer anlegen (UID 1000 ist üblich)
+          # -------------------------------------------------
+          # 1️⃣ System‑Abhängigkeiten, die yay später braucht
+          # -------------------------------------------------
+          #   - go        : benötigt zum Bauen von yay
+          #   - fakeroot  : makepkg benutzt das intern
+          #   - base-devel (ist bereits installiert, enthält gcc, make, …)
+          pacman -Sy --noconfirm go fakeroot
+
+          # -------------------------------------------------
+          # 2️⃣ Normalen Nutzer anlegen (UID 1000 ist üblich)
+          # -------------------------------------------------
           useradd -m -u 1000 builder
 
-          # 2️⃣ Alle nachfolgenden Befehle als dieser Benutzer ausführen
+          # -------------------------------------------------
+          # 3️⃣ Alles als dieser Nutzer ausführen
+          # -------------------------------------------------
           su - builder -c '
             set -euo pipefail
 
-            # --- AUR‑Helper (yay) bauen ---
+            # ----- AUR‑Helper (yay) bauen -----
             git clone https://aur.archlinux.org/yay.git
             cd yay
-            makepkg -si --noconfirm          # baut yay im Nicht‑Root‑Modus
+            # makepkg benutzt bereits fakeroot, kein sudo nötig
+            makepkg -si --noconfirm
             cd ..
 
-            # --- appimage‑builder‑bin aus dem AUR installieren ---
-            yay -S --noconfirm appimage-builder-bin
+            # ----- appimage‑builder‑bin aus dem AUR installieren -----
+            # --no-sudo verhindert, dass yay sudo aufruft
+            yay -S --noconfirm --no-sudo appimage-builder-bin
           '
 
-          # 3️⃣ (Optional) Prüfen, ob das Binary jetzt im PATH liegt
-          which appimage-builder || echo "⚠️ appimage-builder nicht gefunden"
+          # -------------------------------------------------
+          # 4️⃣ Kontrolle (optional)
+          # -------------------------------------------------
+          which appimage-builder || echo "⚠️ appimage-builder not found"
 
       # ----- Build des AppImages -----
       - name: Build AppImage
