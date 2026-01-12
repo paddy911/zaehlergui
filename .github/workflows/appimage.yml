@@ -50,17 +50,28 @@ jobs:
             zsync \
             strace
 
-      # ----- AUR‑Helper (yay) & appimage‑builder installieren -----
-      - name: Install appimage-builder from AUR
+    # ----- Install appimage‑builder from AUR (nicht als root) -----
+      - name: Install appimage‑builder from AUR
         run: |
-          # yay (temporärer AUR‑Helper)
-          pacman -Sy --noconfirm git
-          git clone https://aur.archlinux.org/yay.git
-          cd yay
-          makepkg -si --noconfirm
-          cd ..
-          # appimage‑builder‑Binary aus dem AUR
-          yay -S --noconfirm appimage-builder-bin
+          # 1️⃣ Einen normalen Benutzer anlegen (UID 1000 ist üblich)
+          useradd -m -u 1000 builder
+
+          # 2️⃣ Alle nachfolgenden Befehle als dieser Benutzer ausführen
+          su - builder -c '
+            set -euo pipefail
+
+            # --- AUR‑Helper (yay) bauen ---
+            git clone https://aur.archlinux.org/yay.git
+            cd yay
+            makepkg -si --noconfirm          # baut yay im Nicht‑Root‑Modus
+            cd ..
+
+            # --- appimage‑builder‑bin aus dem AUR installieren ---
+            yay -S --noconfirm appimage-builder-bin
+          '
+
+          # 3️⃣ (Optional) Prüfen, ob das Binary jetzt im PATH liegt
+          which appimage-builder || echo "⚠️ appimage-builder nicht gefunden"
 
       # ----- Build des AppImages -----
       - name: Build AppImage
