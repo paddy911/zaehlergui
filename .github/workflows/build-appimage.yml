@@ -1,0 +1,34 @@
+jobs:
+  build:
+    runs-on: ubuntu-22.04
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      # 👇 HIER wird die Voraussetzung erfüllt
+      - name: Set application version
+        run: |
+          if [[ "$GITHUB_REF" == refs/tags/v* ]]; then
+            VERSION="${GITHUB_REF#refs/tags/v}"
+          else
+            VERSION="dev-${GITHUB_SHA::7}"
+          fi
+          echo "APP_VERSION=$VERSION" >> $GITHUB_ENV
+
+      - name: Install system dependencies
+        run: |
+          sudo apt update
+          sudo apt install -y libfuse2 ...
+
+      - name: Download appimage-builder
+        run: |
+          wget ...
+          chmod +x ...
+          sudo mv ...
+
+      - name: Build AppImage
+        env:
+          APPIMAGE_EXTRACT_AND_RUN: 1
+        run: |
+          appimage-builder --recipe AppImageBuilder.yml

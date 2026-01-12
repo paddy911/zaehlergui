@@ -1,54 +1,46 @@
-name: Build AppImage
+version: 1.2
 
-on:
-  push:
-    branches: [ main ] # Build on pushes to main branch
-    tags: [ "v*" ]  # Build on version tags!
-  pull_request:
+AppDir:
+  path: ./AppDir
 
-jobs:
-  build:
-    runs-on: ubuntu-22.04 # Use Ubuntu 22.04 as the runner environment
+  app_info:
+    id: de.beispiel.zaehlerstaende
+    name: Zählerstände Verwaltung
+    icon: zaehlerstaende
 
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
+    # 🔹 Version kommt aus GitHub Actions (Git-Tag oder Fallback)
+    version: "${APP_VERSION}"
 
-      - name: Install system dependencies
-        run: |
-          set -eux
-          sudo apt update
-          sudo apt install -y \
-            libfuse2 \
-            wget \
-            python3 \
-            python3-pip
+    exec: usr/bin/python3
+    exec_args: "-m zaehlerstaende"
 
-      - name: Download appimage-builder
-        run: |
-          set -eux
-          wget https://github.com/AppImageCrafters/appimage-builder/releases/download/v1.2.0/appimage-builder-1.2.0-x86_64.AppImage
-          chmod +x appimage-builder-1.2.0-x86_64.AppImage
-          sudo mv appimage-builder-1.2.0-x86_64.AppImage /usr/local/bin/appimage-builder
+  files:
+    src/zaehlerstaende: usr/lib/python3/dist-packages/zaehlerstaende
+    assets/zaehler.png: usr/share/icons/hicolor/256x256/apps/zaehlerstaende.png
 
-      - name: Set application version
-        run: |
-        if [[ "$GITHUB_REF" == refs/tags/v* ]]; then
-          VERSION="${GITHUB_REF#refs/tags/v}"
-        else
-          VERSION="dev-${GITHUB_SHA::7}"
-        fi
-        echo "APP_VERSION=$VERSION" >> $GITHUB_ENV
+  desktop:
+    Name: Zählerstände Verwaltung
+    Exec: python3 -m zaehlerstaende
+    Icon: zaehlerstaende
+    Type: Application
+    Categories: Utility;
 
-      - name: Build AppImage
-    env:
-      APPIMAGE_EXTRACT_AND_RUN: 1
-    run: |
-      appimage-builder --recipe AppImageBuilder.yml
+apt:
+  arch: amd64
+  allow_unauthenticated: true
+  sources:
+    - sourceline: "deb http://archive.ubuntu.com/ubuntu jammy main universe"
 
-      - name: Upload AppImage artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: Zaehlerstaende-AppImage
-          path: |
-            **/*.AppImage 
+  include:
+    - python3
+    - python3-gi
+    - gir1.2-gtk-4.0
+    - libgtk-4-1
+    - libglib2.0-0
+    - libpango-1.0-0
+    - libharfbuzz0b
+    - libgraphene-1.0-0
+
+runtime:
+  env:
+    PYTHONPATH: "$APPDIR/usr/lib/python3/dist-packages:$PYTHONPATH"
