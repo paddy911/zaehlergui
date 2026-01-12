@@ -16,9 +16,9 @@ AppDir:
   # ------------------- Dateien, die ins AppDir kopiert werden -------------------
   files:
     # Quelle (relativ zum Repository‑Root) : Ziel (relativ zu AppDir)
-    src/zaehlerstaende.py: usr/lib/python3.*/site-packages/zaehlerstaende/__init__.py
+    usr/lib/python3.*/site-packages/zaehlerstaende/__init__.py: src/zaehlerstaende.py:
     # Optional: Icon (falls du eins hast)
-    assets/zaehler.png: usr/share/icons/hicolor/256x256/apps/zaehlerstaende.png
+    usr/share/icons/hicolor/256x256/apps/zaehler.png: assets/zaehler.png
 
 runtime:
   # (optional) zusätzliche Umgebungsvariablen für das AppImage
