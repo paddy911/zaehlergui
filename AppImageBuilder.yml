@@ -14,12 +14,12 @@ AppDir:
     # comment: "Verwaltet Strom‑, Gas‑ und Wasserzählerstände"
 
   # -------------------------------------------------
-  # Ziel → Quelle (Destination → Source) – **nicht** umgekehrt!
+  # **source → destination**
   # -------------------------------------------------
   files:
     # Ziel im AppDir                                 Quelle im Repository
-    "usr/lib/python3.*/site-packages/zaehlerstaende/__init__.py": src/zaehlerstaende.py
-    "usr/share/icons/hicolor/256x256/apps/zaehlerstaende.png":   assets/zaehler.png
+    src/zaehlerstaende.py: "usr/lib/python3.*/site-packages/zaehlerstaende/__init__.py"
+    assets/zaehler.png: usr/share/icons/hicolor/256x256/apps/zaehlerstaende.png
 
 runtime:
   # (optional) zusätzliche Umgebungsvariablen für das AppImage
