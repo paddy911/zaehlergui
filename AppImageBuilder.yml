@@ -17,9 +17,9 @@ AppDir:
   # **source → destination**
   # -------------------------------------------------
   files:
-    # Ziel im AppDir                                 Quelle im Repository
-    src/zaehlerstaende.py: "usr/lib/python3.*/site-packages/zaehlerstaende/__init__.py"
-    assets/zaehler.png: usr/share/icons/hicolor/256x256/apps/zaehler.png
+    "usr/lib/python3.*/site-packages/zaehlerstaende/__init__.py": src/zaehlerstaende/__init__.py
+    "usr/lib/python3.*/site-packages/zaehlerstaende/zaehlerstaende.py": src/zaehlerstaende/zaehlerstaende.py
+    "usr/share/icons/hicolor/256x256/apps/zaehlerstaende.png": assets/zaehler.png
 
 runtime:
   # (optional) zusätzliche Umgebungsvariablen für das AppImage
