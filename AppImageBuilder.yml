@@ -6,19 +6,20 @@ AppDir:
     id: de.beispiel.zaehlerstaende
     name: Zählerstände Verwaltung
     exec: usr/bin/python3
-    exec_args: "-m zaehlerstaende"   # <-- ein String, kein Array
+    exec_args: "-m zaehlerstaende"   # ein einziger String, kein Array
     version: "1.0"
-    # ---------- Felder, die in 1.1.0 NICHT erlaubt sind ----------
+    # Die folgenden Felder existieren erst ab v1.1.1 → weglassen bei v1.1.0
     # type: Application
     # categories: ["Utility"]
     # comment: "Verwaltet Strom‑, Gas‑ und Wasserzählerstände"
 
-  # ------------------- Dateien, die ins AppDir kopiert werden -------------------
+  # -------------------------------------------------
+  # Ziel → Quelle (Destination → Source) – **nicht** umgekehrt!
+  # -------------------------------------------------
   files:
-    # Quelle (relativ zum Repository‑Root) : Ziel (relativ zu AppDir)
-    usr/lib/python3.*/site-packages/zaehlerstaende/__init__.py: src/zaehlerstaende.py:
-    # Optional: Icon (falls du eins hast)
-    usr/share/icons/hicolor/256x256/apps/zaehler.png: assets/zaehler.png
+    # Ziel im AppDir                                 Quelle im Repository
+    "usr/lib/python3.*/site-packages/zaehlerstaende/__init__.py": src/zaehlerstaende.py
+    "usr/share/icons/hicolor/256x256/apps/zaehlerstaende.png":   assets/zaehler.png
 
 runtime:
   # (optional) zusätzliche Umgebungsvariablen für das AppImage
