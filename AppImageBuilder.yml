@@ -1,24 +1,31 @@
 version: 1
 
 AppDir:
-  path: ./AppDir
+  path: ./AppDir                     # temporäres Verzeichnis, das appimage‑builder erzeugt
   app_info:
     id: de.beispiel.zaehlerstaende
     name: Zählerstände Verwaltung
     exec: usr/bin/python3
-    exec_args: ["-m", "zaehlerstaende"]
+    exec_args: "-m zaehlerstaende"   # <- **ein String, kein Array**
     version: "1.0"
     type: Application
     categories: ["Utility"]
     comment: "Verwaltet Strom‑, Gas‑ und Wasserzählerstände"
 
+  # ------------------- Dateien, die ins AppDir kopiert werden -------------------
   files:
+    # Quelle (relativ zum Repository‑Root) : Ziel (relativ zu AppDir)
     src/zaehlerstaende.py: usr/lib/python3.*/site-packages/zaehlerstaende/__init__.py
-    assets/zaehler.png: usr/share/icons/hicolor/256x256/apps/zaehler.png
+    # Optional: Icon (falls du eins hast)
+    assets/zaehler.png: usr/share/icons/hicolor/256x256/apps/zaehlerstaende.png
 
 runtime:
+  # (optional) zusätzliche Umgebungsvariablen für das AppImage
   env:
     PYTHONPATH: "$APPDIR/usr/lib/python3.*/site-packages"
+
+  # Bibliotheken, die ins AppImage gepackt werden sollen.
+  # Für ein reines GTK‑4‑Programm reichen diese meist aus.
   libraries:
     - libgtk-4.so.*
     - libgdk-4.so.*
