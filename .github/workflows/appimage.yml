@@ -1,21 +1,41 @@
 name: Build AppImage
 
+# -------------------------------------------------
+# 1️⃣ Trigger
+# -------------------------------------------------
 on:
   push:
-    branches: [ dev ]          # oder dein Standard‑Branch
+    branches: [dev]          # oder dein Standard‑Branch
   pull_request:
-    branches: [ dev ]
+    branches: [dev]
 
+# -------------------------------------------------
+# 2️⃣ Jobs
+# -------------------------------------------------
 jobs:
   build:
-    runs-on: ubuntu‑latest     # Ubuntu‑Runner, funktioniert genauso gut
+    runs-on: ubuntu-latest          # Host‑Runner (braucht Docker)
     container:
-      image: archlinux:latest   # Wir brauchen Arch‑Pakete (gtk4, appimage‑builder)
+      image: archlinux:latest       # Wir arbeiten in einem Arch‑Container
 
+    # -------------------------------------------------
+    # 3️⃣ Steps (Reihenfolge wichtig!)
+    # -------------------------------------------------
     steps:
+      # ----- Cache für Pacman‑ und Pip‑Pakete -----
+      - name: Cache pacman & pip
+        uses: actions/cache@v4
+        with:
+          path: |
+            /var/cache/pacman/pkg
+            ~/.cache/pip
+          key: ${{ runner.os }}-arch-pkg-${{ hashFiles('**/*.yml') }}
+
+      # ----- Checkout des Repositories -----
       - name: Checkout repository
         uses: actions/checkout@v4
 
+      # ----- System‑Abhängigkeiten installieren -----
       - name: Install system dependencies
         run: |
           pacman -Sy --noconfirm \
@@ -30,29 +50,26 @@ jobs:
             zsync \
             strace
 
-      - name: Install appimage‑builder from AUR
+      # ----- AUR‑Helper (yay) & appimage‑builder installieren -----
+      - name: Install appimage-builder from AUR
         run: |
-          # Install yay (AUR‑helper) temporär
+          # yay (temporärer AUR‑Helper)
           pacman -Sy --noconfirm git
           git clone https://aur.archlinux.org/yay.git
           cd yay
           makepkg -si --noconfirm
           cd ..
+          # appimage‑builder‑Binary aus dem AUR
           yay -S --noconfirm appimage-builder-bin
 
+      # ----- Build des AppImages -----
       - name: Build AppImage
         run: |
           appimage-builder --recipe AppImageBuilder.yml
 
-      - name: Upload artifact
+      # ----- Artefakt hochladen -----
+      - name: Upload AppImage artifact
         uses: actions/upload-artifact@v4
         with:
           name: zaehlerstaende-appimage
           path: "*.AppImage"
-
-      - uses: actions/cache@v4
-        with:
-         path: |
-           /var/cache/pacman/pkg
-           ~/.cache/pip
-         key: ${{ runner.os }}-pacman-${{ hashFiles('PKGBUILD') }}   
