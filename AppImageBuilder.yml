@@ -5,27 +5,20 @@ AppDir:
   app_info:
     id: de.beispiel.zaehlerstaende
     name: Zählerstände Verwaltung
-    icon: zaehlerstaende.png          # optional – ein 256×256‑PNG im AppDir
     exec: usr/bin/python3
     exec_args: ["-m", "zaehlerstaende"]
     version: "1.0"
-    type: "Application"
+    type: Application
     categories: ["Utility"]
     comment: "Verwaltet Strom‑, Gas‑ und Wasserzählerstände"
 
-  # Dateien, die ins AppDir kopiert werden
   files:
-    # Python‑Quellcode
-    - src/zaehlerstaende.py -> usr/lib/python3.*/site-packages/zaehlerstaende/__init__.py
-
-    # Icon (falls vorhanden)
-    #- assets/zaehlerstaende.png -> usr/share/icons/hicolor/256x256/apps/zaehlerstaende.png
+    src/zaehlerstaende.py: usr/lib/python3.*/site-packages/zaehlerstaende/__init__.py
+    assets/zaehler.png: usr/share/icons/hicolor/256x256/apps/zaehler.png
 
 runtime:
   env:
     PYTHONPATH: "$APPDIR/usr/lib/python3.*/site-packages"
-
-  # System‑Bibliotheken, die mitgeliefert werden sollen
   libraries:
     - libgtk-4.so.*
     - libgdk-4.so.*
@@ -33,6 +26,3 @@ runtime:
     - libpango-1.0.so.*
     - libcairo.so.*
     - libgobject-2.0.so.*
-
-  # Optional: weitere Bibliotheken, falls das System sie nicht garantiert liefert
-  # (z. B. libgdk_pixbuf-2.0.so.*)
