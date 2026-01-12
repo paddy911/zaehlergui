@@ -1,50 +1,56 @@
 #!/usr/bin/env bash
+set -e   # Abbruch bei Fehlern, damit wir nicht weiterlaufen, wenn etwas schiefgeht
 
-# -------------------------------------------------
-# 1. Programm in /usr/local/bin kopieren & ausführbar machen
-# -------------------------------------------------
+# ------------------------------------------------------------------
+# 1. Programmdatei nach /usr/local/bin kopieren und ausführbar machen
+# ------------------------------------------------------------------
 sudo cp zaehlerstaende.py /usr/local/bin/zaehlerstaende
 sudo chmod +x /usr/local/bin/zaehlerstaende
 
-# -------------------------------------------------
-# 2. Sicherstellen, dass das Icon-Verzeichnis lesbar ist
-# -------------------------------------------------
-# (nur nötig, wenn das Icon nicht bereits lesbar ist)
-sudo chmod -R a+r /usr/local/bin/zaehlerstaende/data
+# ------------------------------------------------------------------
+# 2. Icon an den richtigen Platz bringen
+# ------------------------------------------------------------------
+# Angenommen, du hast eine PNG‑Datei namens icon.png im selben Verzeichnis wie das Skript
+ICON_SRC="zaehler.png"                         # <-- passe ggf. den Namen an
+ICON_DST="/usr/local/share/icons/hicolor/48x48/apps/zaehlerstaende.png"
 
-# -------------------------------------------------
-# 3. Zielordner für .desktop‑Datei anlegen (falls nötig)
-# -------------------------------------------------
-mkdir -p "$HOME/.local/share/applications"
+# Zielverzeichnis anlegen (falls noch nicht vorhanden)
+sudo mkdir -p "$(dirname "$ICON_DST")"
 
-# -------------------------------------------------
-# 4. .desktop‑Datei erzeugen
-# -------------------------------------------------
-cat > "$HOME/.local/share/applications/zaehlerstaende.desktop" << 'EOF'
+# Icon kopieren und lesbar machen
+sudo cp "$ICON_SRC" "$ICON_DST"
+sudo chmod a+r "$ICON_DST"
+
+# ------------------------------------------------------------------
+# 3. .desktop‑Datei erzeugen (im Home‑Verzeichnis des Aufrufenden)
+# ------------------------------------------------------------------
+DESKTOP_FILE="$HOME/.local/share/applications/zaehlerstaende.desktop"
+mkdir -p "$(dirname "$DESKTOP_FILE")"
+
+cat > "$DESKTOP_FILE" << 'EOF'
 [Desktop Entry]
 Version=1.0
 Type=Application
 Name=Zählerstände
 Comment=Zählerstände verwalten
 Exec=/usr/local/bin/zaehlerstaende
-Icon=/usr/local/bin/zaehlerstaende/data/icon.png
+Icon=zaehlerstaende
 Terminal=false
 Categories=Utility;Office;
 EOF
 
-# -------------------------------------------------
-# 5. .desktop‑Datei ausführbar machen
-# -------------------------------------------------
-chmod +x "$HOME/.local/share/applications/zaehlerstaende.desktop"
+# .desktop‑Datei ausführbar machen, sonst wird sie von vielen Desktops ignoriert
+chmod +x "$DESKTOP_FILE"
 
-# -------------------------------------------------
-# 6. (Optional) Desktop‑Datenbank aktualisieren
-# -------------------------------------------------
+# ------------------------------------------------------------------
+# 4. (Optional) Desktop‑Datenbank aktualisieren
+# ------------------------------------------------------------------
 if command -v update-desktop-database >/dev/null 2>&1; then
     update-desktop-database "$HOME/.local/share/applications"
 fi
 
-# -------------------------------------------------
+# ------------------------------------------------------------------
 # Abschlussmeldung
-# -------------------------------------------------
-echo "Installation abgeschlossen! Starte über das Menü oder mit: zaehlerstaende"
+# ------------------------------------------------------------------
+echo "Installation abgeschlossen!"
+echo "Starte das Programm über das Anwendungsmenü oder mit dem Befehl: zaehlerstaende"
