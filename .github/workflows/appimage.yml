@@ -43,4 +43,4 @@ jobs:
         with:
           name: Zaehlerstaende-AppImage
           path: |
-            *.AppImage
+            *.AppImage  
