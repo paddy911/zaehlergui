@@ -1,0 +1,35 @@
+version: 1
+
+AppDir:
+  path: ./AppDir                     # temporäres Verzeichnis, das appimage‑builder erzeugt
+  app_info:
+    id: de.beispiel.zaehlerstaende     # Eindeutige Programm‑ID (Reverse‑Domain‑Name‑Notation)
+    name: Zählerstände Verwaltung     # Programmname
+    exec: usr/bin/python3           # Pfad zur ausführbaren Datei im AppDir
+    exec_args: "-m zaehlerstaende"   # ein einziger String, kein Array
+    version: "1.0"
+    # Die folgenden Felder existieren erst ab v1.1.1 → weglassen bei v1.1.0
+    
+    
+  # -------------------------------------------------
+  # **source → destination**
+  # -------------------------------------------------
+  files:
+   src/zaehlerstaende/__init__.py: "usr/lib/python3.*/site-packages/zaehlerstaende/__init__.py"
+   src/zaehlerstaende/zaehlerstaende.py: "usr/lib/python3.*/site-packages/zaehlerstaende/zaehlerstaende.py"
+   assets/zaehler.png:               "usr/share/icons/hicolor/256x256/apps/zaehlerstaende.png"
+
+runtime:
+  # (optional) zusätzliche Umgebungsvariablen für das AppImage
+  env:
+    PYTHONPATH: "$APPDIR/usr/lib/python3.*/site-packages"
+
+  # Bibliotheken, die ins AppImage gepackt werden sollen.
+  # Für ein reines GTK‑4‑Programm reichen diese meist aus.
+  libraries:
+    - libgtk-4.so.*
+    - libgdk-4.so.*
+    - libglib-2.0.so.*
+    - libpango-1.0.so.*
+    - libcairo.so.*
+    - libgobject-2.0.so.*

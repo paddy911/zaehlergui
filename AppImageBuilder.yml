@@ -1,35 +1,41 @@
-version: 1
+version: 1.2
 
 AppDir:
-  path: ./AppDir                     # temporäres Verzeichnis, das appimage‑builder erzeugt
+  path: ./AppDir
+
   app_info:
-    id: de.beispiel.zaehlerstaende     # Eindeutige Programm‑ID (Reverse‑Domain‑Name‑Notation)
-    name: Zählerstände Verwaltung     # Programmname
-    exec: usr/bin/python3           # Pfad zur ausführbaren Datei im AppDir
-    exec_args: "-m zaehlerstaende"   # ein einziger String, kein Array
+    id: de.beispiel.zaehlerstaende
+    name: Zählerstände Verwaltung # Application Name
+    icon: zaehlerstaende # Name of the icon file without extension
     version: "1.0"
-    # Die folgenden Felder existieren erst ab v1.1.1 → weglassen bei v1.1.0
-    
-    
-  # -------------------------------------------------
-  # **source → destination**
-  # -------------------------------------------------
+    exec: usr/bin/python3
+    exec_args: "-m zaehlerstaende"
+
   files:
-   src/zaehlerstaende/__init__.py: "usr/lib/python3.*/site-packages/zaehlerstaende/__init__.py"
-   src/zaehlerstaende/zaehlerstaende.py: "usr/lib/python3.*/site-packages/zaehlerstaende/zaehlerstaende.py"
-   assets/zaehler.png:               "usr/share/icons/hicolor/256x256/apps/zaehlerstaende.png"
+    src/zaehlerstaende: usr/lib/python3/dist-packages/zaehlerstaende
+    assets/zaehler.png: usr/share/icons/hicolor/256x256/apps/zaehlerstaende.png
+
+  desktop:
+    Name: Zählerstände Verwaltung
+    Exec: zaehlerstaende
+    Icon: zaehlerstaende
+    Type: Application
+    Categories: Utility;
+
+apt:
+  arch: amd64
+  allow_unauthenticated: true
+  sources:
+    - sourceline: "deb http://archive.ubuntu.com/ubuntu jammy main universe"
+      key_url: "https://keyserver.ubuntu.com/pks/lookup?op=get&search=0x871920D1991BC93C"
+
+  include:
+    - python3
+    - python3-gi
+    - gir1.2-gtk-4.0
+    - libgtk-4-1
 
 runtime:
-  # (optional) zusätzliche Umgebungsvariablen für das AppImage
   env:
-    PYTHONPATH: "$APPDIR/usr/lib/python3.*/site-packages"
+    PYTHONPATH: "$APPDIR/usr/lib/python3/dist-packages"
 
-  # Bibliotheken, die ins AppImage gepackt werden sollen.
-  # Für ein reines GTK‑4‑Programm reichen diese meist aus.
-  libraries:
-    - libgtk-4.so.*
-    - libgdk-4.so.*
-    - libglib-2.0.so.*
-    - libpango-1.0.so.*
-    - libcairo.so.*
-    - libgobject-2.0.so.*
