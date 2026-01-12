@@ -8,7 +8,7 @@ on:
 
 jobs:
   build:
-    runs-on: Ubuntu‑Runner      # Ubuntu‑Runner, funktioniert genauso gut
+    runs-on: ubuntu‑latest     # Ubuntu‑Runner, funktioniert genauso gut
     container:
       image: archlinux:latest   # Wir brauchen Arch‑Pakete (gtk4, appimage‑builder)
 
