@@ -3,7 +3,7 @@ name: Build AppImage
 on:
   push:
     branches: [ main ] # Build on pushes to main branch
-    tags: [ "v*" ]  # Build on version tags
+    tags: [ "v*" ]  # Build on version tags!
   pull_request:
 
 jobs:
