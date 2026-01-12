@@ -1,0 +1,51 @@
+name: Build AppImage
+
+on:
+  push:
+    branches: [ dev ]          # oder dein Standard‑Branch
+  pull_request:
+    branches: [ dev ]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest      # Ubuntu‑Runner, funktioniert genauso gut
+    container:
+      image: archlinux:latest   # Wir brauchen Arch‑Pakete (gtk4, appimage‑builder)
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install system dependencies
+        run: |
+          pacman -Sy --noconfirm \
+            base-devel \
+            git \
+            python-pip \
+            python-gobject \
+            gtk4 \
+            patchelf \
+            fuse2 \
+            squashfs-tools \
+            zsync \
+            strace
+
+      - name: Install appimage‑builder from AUR
+        run: |
+          # Install yay (AUR‑helper) temporär
+          pacman -Sy --noconfirm git
+          git clone https://aur.archlinux.org/yay.git
+          cd yay
+          makepkg -si --noconfirm
+          cd ..
+          yay -S --noconfirm appimage-builder-bin
+
+      - name: Build AppImage
+        run: |
+          appimage-builder --recipe AppImageBuilder.yml
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: zaehlerstaende-appimage
+          path: "*.AppImage"
