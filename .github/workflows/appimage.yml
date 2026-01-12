@@ -52,10 +52,10 @@ jobs:
       # -------------------------------------------------
       - name: Install appimage-builder
         run: |
-          # Version festlegen
-          APPIMG_BUILDER_VER="1.1.1"
+          # Version festlegen (1.1.0 ist die neueste verfügbare AppImage-Version)
+          APPIMG_BUILDER_VER="1.1.0"
           
-          # Korrekte Download-URL (wichtig: /download/ statt /releases/download/)
+          # Korrekte Download-URL
           URL="https://github.com/AppImageCrafters/appimage-builder/releases/download/v${APPIMG_BUILDER_VER}/appimage-builder-${APPIMG_BUILDER_VER}-x86_64.AppImage"
           
           echo "📥 Downloading appimage-builder ${APPIMG_BUILDER_VER}..."
