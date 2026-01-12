@@ -50,15 +50,14 @@ jobs:
             zsync \
             strace
 
-    # ----- Install appimage‑builder from AUR (nicht als root) -----
+     # ----- Install appimage‑builder from AUR (ohne sudo) -----
       - name: Install appimage‑builder from AUR
         run: |
           # -------------------------------------------------
-          # 1️⃣ System‑Abhängigkeiten, die yay später braucht
+          # 1️⃣ Build‑Abhängigkeiten, die yay später braucht
           # -------------------------------------------------
-          #   - go        : benötigt zum Bauen von yay
-          #   - fakeroot  : makepkg benutzt das intern
-          #   - base-devel (ist bereits installiert, enthält gcc, make, …)
+          #   - go        : zum Kompilieren von yay
+          #   - fakeroot  : makepkg nutzt das intern
           pacman -Sy --noconfirm go fakeroot
 
           # -------------------------------------------------
@@ -72,16 +71,25 @@ jobs:
           su - builder -c '
             set -euo pipefail
 
-            # ----- AUR‑Helper (yay) bauen -----
+            # ----- AUR‑Helper (yay) bauen, aber NICHT installieren -----
             git clone https://aur.archlinux.org/yay.git
             cd yay
-            # makepkg benutzt bereits fakeroot, kein sudo nötig
-            makepkg -si --noconfirm
+
+            # -s   → löst Build‑Depends auf (wir haben go bereits)
+            # -f   → zwingt das Erstellen des Pakets, ohne zu fragen
+            # -c   → kein automatisches Installieren (wir machen das selbst)
+            makepkg -sf --noconfirm
+
+            # ----- Manuelles Installieren des gebauten yay-Pakets -----
+            # Das erzeugte Paket liegt im aktuellen Verzeichnis und hat
+            # den Namen etwa: yay-12.5.7-1-x86_64.pkg.tar.zst
+            # Wir benutzen pacman -U (keine sudo‑Abfrage) zum Installieren.
+            pacman -U --noconfirm yay-*-x86_64.pkg.tar.zst
             cd ..
 
             # ----- appimage‑builder‑bin aus dem AUR installieren -----
-            # --no-sudo verhindert, dass yay sudo aufruft
-            yay -S --noconfirm --no-sudo appimage-builder-bin
+            # --no-sudo verhindert, dass yay sudo aufruft.
+            yay -S --no-sudo --noconfirm appimage-builder-bin
           '
 
           # -------------------------------------------------
