@@ -1,4 +1,5 @@
 name: Build AppImage
+
 on:
   push:
     branches: [dev]
@@ -10,7 +11,7 @@ jobs:
     runs-on: ubuntu-latest
     container:
       image: archlinux:latest
-    
+
     steps:
       # -------------------------------------------------
       # 1️⃣ Cache (pacman & pip)
@@ -22,15 +23,15 @@ jobs:
             /var/cache/pacman/pkg
             ~/.cache/pip
           key: ${{ runner.os }}-arch-pkg-${{ hashFiles('**/*.yml') }}
-      
+
       # -------------------------------------------------
       # 2️⃣ Checkout des Repositories
       # -------------------------------------------------
       - name: Checkout repository
         uses: actions/checkout@v4
-      
+
       # -------------------------------------------------
-      # 3️⃣ System-Abhängigkeiten
+      # 3️⃣ System‑Abhängigkeiten (für deine App)
       # -------------------------------------------------
       - name: Install system dependencies
         run: |
@@ -46,51 +47,47 @@ jobs:
             zsync \
             strace \
             wget
-      
+
       # -------------------------------------------------
-      # 4️⃣ Download und Installation von appimage-builder
+      # 4️⃣ Download und Installation von appimage‑builder
       # -------------------------------------------------
       - name: Install appimage-builder
         run: |
-          # Version festlegen (1.1.0 ist die neueste verfügbare AppImage-Version)
-          APPIMG_BUILDER_VER="1.1.0"
-          
-          # Korrekte Download-URL
+          # ---- Version festlegen (neueste stabile) ----
+          APPIMG_BUILDER_VER="1.1.1"
           URL="https://github.com/AppImageCrafters/appimage-builder/releases/download/v${APPIMG_BUILDER_VER}/appimage-builder-${APPIMG_BUILDER_VER}-x86_64.AppImage"
-          
-          echo "📥 Downloading appimage-builder ${APPIMG_BUILDER_VER}..."
-          
-          # Mit wget und folgenden Weiterleitungen
-          wget --no-verbose --show-progress \
-            -O /tmp/appimage-builder.AppImage \
-            "$URL"
-          
-          # Prüfen, ob die Datei wirklich ein Binary ist
+
+          echo "📥 Downloading appimage-builder ${APPIMG_BUILDER_VER} ..."
+          wget -q --show-progress -O /tmp/appimage-builder.AppImage "$URL"
+
+          # ---- sanity‑check: muss ein ELF‑Binary sein ----
           if ! file /tmp/appimage-builder.AppImage | grep -q "ELF"; then
             echo "❌ Downloaded file is not an ELF binary!"
-            echo "File content:"
             head -20 /tmp/appimage-builder.AppImage
             exit 1
           fi
-          
-          echo "✅ Valid binary downloaded"
+
           chmod +x /tmp/appimage-builder.AppImage
-          
-          # Nach /usr/local/bin verschieben
           mv /tmp/appimage-builder.AppImage /usr/local/bin/appimage-builder
-          
-          # Verifizieren
+
           which appimage-builder || { echo "❌ appimage-builder not in PATH"; exit 1; }
-          
           echo "✅ appimage-builder installed successfully"
-      
+
       # -------------------------------------------------
-      # 5️⃣ Build des AppImages
+      # 5️⃣ Build des AppImages (no‑fuse mode)
       # -------------------------------------------------
-      - name: Build AppImage
+      - name: Build AppImage (no‑fuse)
+        # Variante A: Umgebungsvariable
+        env:
+          APPIMAGE_EXTRACT_AND_RUN: "1"
         run: |
           appimage-builder --recipe AppImageBuilder.yml
-      
+        # -------------------------------------------------
+        #   alternativ (wenn du das Flag bevorzugst):
+        # run: |
+        #   appimage-builder --no-fuse --recipe AppImageBuilder.yml
+        # -------------------------------------------------
+
       # -------------------------------------------------
       # 6️⃣ Artefakt hochladen
       # -------------------------------------------------
