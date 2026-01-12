@@ -87,10 +87,12 @@ jobs:
       # -------------------------------------------------
       # 5️⃣ Build des AppImages
       # -------------------------------------------------
-      - name: Build AppImage
+      - name: Build AppImage (no‑fuse via env‑var)
+        env:
+          APPIMAGE_EXTRACT_AND_RUN: "1"   # zwingt den no‑fuse‑Modus
         run: |
-          appimage-builder --no-fuse --recipe AppImageBuilder.yml
-      
+          appimage-builder --recipe AppImageBuilder.yml
+              
       # -------------------------------------------------
       # 6️⃣ Artefakt hochladen
       # -------------------------------------------------
