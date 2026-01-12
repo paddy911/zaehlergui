@@ -11,7 +11,7 @@ sudo chmod +x /usr/local/bin/zaehlerstaende
 # 2. Icon an den richtigen Platz bringen
 # ------------------------------------------------------------------
 # Angenommen, du hast eine PNG‑Datei namens icon.png im selben Verzeichnis wie das Skript
-ICON_SRC="zaehler.png"                         # <-- passe ggf. den Namen an
+ICON_SRC="data/zaehler.png"                         # <-- passe ggf. den Namen an
 ICON_DST="/usr/local/share/icons/hicolor/48x48/apps/zaehlerstaende.png"
 
 # Zielverzeichnis anlegen (falls noch nicht vorhanden)
