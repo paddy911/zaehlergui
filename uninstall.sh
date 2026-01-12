@@ -1,10 +1,12 @@
 #!/usr/bin/env bash
 # -------------------------------------------------
-# uninstall.sh
+# uninstall.sh – Mint / Arch kompatibel
 #   Entfernt alle Spuren von "Zählerstände"
 # -------------------------------------------------
 
 set -e   # sofort abbrechen, falls ein Befehl fehlschlägt
+
+cmd_exists() { command -v "$1" >/dev/null 2>&1; }
 
 # -------------------------------------------------
 # 1. Programmdatei entfernen
@@ -48,6 +50,7 @@ if [[ -L "$LINK_PATH" || -f "$LINK_PATH" ]]; then
     echo "✔  Desktop‑Verknüpfung $LINK_PATH entfernt"
 else
     echo "⚠  Desktop‑Verknüpfung $LINK_PATH war nicht vorhanden"
+    DESKTOP_DIR="$HOME/Desktop"   # fallback – die meisten Mint‑Installationen haben diesen Pfad
 fi
 
 # -------------------------------------------------

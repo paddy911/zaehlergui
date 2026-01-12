@@ -1,6 +1,24 @@
 #!/usr/bin/env bash
 set -e   # Abbruch bei Fehlern, damit wir nicht weiterlaufen, wenn etwas schiefgeht
 
+# -------------------------------------------------
+# Hilfsfunktion: prüft, ob ein Kommando existiert
+# -------------------------------------------------
+cmd_exists() { command -v "$1" >/dev/null 2>&1; }
+
+# -------------------------------------------------
+# 0. Prüfen, ob notwendige Hilfsprogramme da sind
+# -------------------------------------------------
+missing=()
+for prog in xdg-user-dir gio update-desktop-database; do
+    cmd_exists "$prog" || missing+=("$prog")
+done
+if (( ${#missing[@]} )); then
+    echo "⚠  Fehlende Hilfsprogramme: ${missing[*]}"
+    echo "Bitte installiere sie (z. B. sudo apt install xdg-utils libglib2.0-bin desktop-file-utils)"
+    exit 1
+fi
+
 # ------------------------------------------------------------------
 # 1. Programmdatei nach /usr/local/bin kopieren und ausführbar machen
 # ------------------------------------------------------------------
@@ -11,7 +29,7 @@ sudo chmod +x /usr/local/bin/zaehlerstaende
 # 2. Icon an den richtigen Platz bringen
 # ------------------------------------------------------------------
 # Angenommen, du hast eine PNG‑Datei namens icon.png im selben Verzeichnis wie das Skript
-ICON_SRC="data/zaehler.png"                         # <-- passe ggf. den Namen an
+ICON_SRC="data/zaehler.png"                         # Icon liegt im data‑Ordner
 ICON_DST="/usr/local/share/icons/hicolor/48x48/apps/zaehlerstaende.png"
 
 # Zielverzeichnis anlegen (falls noch nicht vorhanden)
@@ -64,8 +82,8 @@ ln -sf "$HOME/.local/share/applications/zaehlerstaende.desktop" \
 # Ausführbarkeit sicherstellen
 chmod +x "$DESKTOP_DIR/zaehlerstaende.desktop"
 
-# (GNOME) Vertraulichkeit setzen, damit kein Warndialog erscheint
-if command -v gio >/dev/null 2>&1; then
+# GNOME‑/Cinnamon‑Trust‑Flag setzen (unterdrückt den Warnhinweis)
+if cmd_exists gio; then
     gio set "$DESKTOP_DIR/zaehlerstaende.desktop" metadata::trusted true
 fi
 
@@ -74,5 +92,5 @@ echo "Verknüpfung wurde auf dem Desktop angelegt."
 # ------------------------------------------------------------------
 # Abschlussmeldung
 # ------------------------------------------------------------------
-echo "Installation abgeschlossen!"
-echo "Starte das Programm über das Anwendungsmenü oder mit dem Befehl: zaehlerstaende"
+echo "✅ Installation erfolgreich!"
+echo "→ Starte das Programm über das Anwendungsmenü oder per Doppelklick auf den Desktop‑Eintrag."
