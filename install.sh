@@ -49,6 +49,28 @@ if command -v update-desktop-database >/dev/null 2>&1; then
     update-desktop-database "$HOME/.local/share/applications"
 fi
 
+# -------------------------------------------------
+# 5. Verknüpfung auf dem Schreibtisch anlegen
+# -------------------------------------------------
+DESKTOP_DIR=$(xdg-user-dir DESKTOP)   # ermittelt den Desktop-Pfad
+
+# Falls das Verzeichnis nicht existiert (seltene Fälle)
+mkdir -p "$DESKTOP_DIR"
+
+# Symbolischen Link erstellen (kann auch mit cp ersetzt werden)
+ln -sf "$HOME/.local/share/applications/zaehlerstaende.desktop" \
+      "$DESKTOP_DIR/zaehlerstaende.desktop"
+
+# Ausführbarkeit sicherstellen
+chmod +x "$DESKTOP_DIR/zaehlerstaende.desktop"
+
+# (GNOME) Vertraulichkeit setzen, damit kein Warndialog erscheint
+if command -v gio >/dev/null 2>&1; then
+    gio set "$DESKTOP_DIR/zaehlerstaende.desktop" metadata::trusted true
+fi
+
+echo "Verknüpfung wurde auf dem Desktop angelegt."
+
 # ------------------------------------------------------------------
 # Abschlussmeldung
 # ------------------------------------------------------------------
