@@ -12,7 +12,7 @@ Type=Application
 Name=Zählerstände
 Comment=Zählerstände verwalten
 Exec=/usr/local/bin/zaehlerstaende
-Icon=utilities-calculator
+Icon=/usr/local/bin/zaehlerstaende/data/icon.png
 Terminal=false
 Categories=Utility;Office;
 EOF
