@@ -6,11 +6,12 @@ AppDir:
     id: de.beispiel.zaehlerstaende
     name: Zählerstände Verwaltung
     exec: usr/bin/python3
-    exec_args: "-m zaehlerstaende"   # <- **ein String, kein Array**
+    exec_args: "-m zaehlerstaende"   # <-- ein String, kein Array
     version: "1.0"
-    type: Application
-    categories: ["Utility"]
-    comment: "Verwaltet Strom‑, Gas‑ und Wasserzählerstände"
+    # ---------- Felder, die in 1.1.0 NICHT erlaubt sind ----------
+    # type: Application
+    # categories: ["Utility"]
+    # comment: "Verwaltet Strom‑, Gas‑ und Wasserzählerstände"
 
   # ------------------- Dateien, die ins AppDir kopiert werden -------------------
   files:
