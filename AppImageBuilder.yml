@@ -9,10 +9,8 @@ AppDir:
     exec_args: "-m zaehlerstaende"   # ein einziger String, kein Array
     version: "1.0"
     # Die folgenden Felder existieren erst ab v1.1.1 → weglassen bei v1.1.0
-    # type: Application
-    # categories: ["Utility"]
-    # comment: "Verwaltet Strom‑, Gas‑ und Wasserzählerstände"
-
+    
+    
   # -------------------------------------------------
   # **source → destination**
   # -------------------------------------------------
