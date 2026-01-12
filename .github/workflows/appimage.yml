@@ -62,8 +62,11 @@ jobs:
           # 4️⃣ Installiere das gebaute yay‑Paket als root
           pacman -U --noconfirm /home/builder/yay/yay-*-x86_64.pkg.tar.zst
 
-          # 5️⃣ appimage‑builder‑bin aus dem AUR installieren (ohne sudo)
-          yay -S --no-sudo --noconfirm appimage-builder-bin
+          # 5️⃣ appimage‑builder‑bin aus dem AUR installieren (als normaler Nutzer)
+          su - builder -c '
+            set -euo pipefail
+            yay -S --noconfirm appimage-builder-bin
+          '
 
           # 6️⃣ Kontrolle (optional)
           which appimage-builder || echo "⚠️ appimage-builder not found"
