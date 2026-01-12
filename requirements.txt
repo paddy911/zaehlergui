@@ -1,0 +1,1 @@
+echo "PyGObject>=3.44" > requirements.txt
