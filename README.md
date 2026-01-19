@@ -1,4 +1,4 @@
-📄 README – Installation & Desktop‑Verknüpfung für Zählerstände
+README – Installation & Desktop‑Verknüpfung für Zählerstände
 
 Dieses Repository enthält ein Bash‑Installations‑Script, dass:
 
