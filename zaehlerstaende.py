@@ -1,44 +1,29 @@
 #!/usr/bin/env python3
 """
-Zählerstände Verwaltung
-Verwaltet Strom-, Gas- und Wasserzählerstände
+Zählerstände Verwaltung – GTK 4‑Only Version
+
+Dieses Modul kann als eigenständiges Skript gestartet werden
+oder als importierbares Paket (z. B. `from zaehler_gui.app import run_app`).
 """
 
-# ----------------------------------------------------------------------
-#  0️⃣  Vorbereitung: Backend‑Erkennung & ggf. Umschaltung
-# ----------------------------------------------------------------------
-# Wir wollen das Programm sowohl unter Wayland als auch unter X11 starten.
-# GTK wählt standardmäßig das Backend, das vom System angeboten wird.
-# Manchmal (z. B. bei gemischten Remote‑Sessions) kann das falsche Backend
-# gewählt werden und das Fenster lässt sich nicht öffnen.
-# Deshalb:
-#   • Prüfen, welches Backend gerade aktiv ist.
-#   • Falls das aktive Backend nicht funktioniert, das Gegenstück forcieren.
-#   • Das Ganze muss geschehen, **BEVOR** wir `gi.require_version('Gtk', …)` aufrufen,
-#     sonst hat GTK das Backend bereits festgelegt.
-
-import os
-import sys
-import subprocess
+# ------------------------------------------------------------
+# 0️⃣ Backend‑Erkennung (Wayland / X11) – unverändert
+# ------------------------------------------------------------
+import os, sys, subprocess, json, csv
+from datetime import datetime
+from pathlib import Path
 
 def _backend_works(backend: str) -> bool:
-    """
-    Versucht, ein minimal‑GTK‑Fenster mit dem angegebenen Backend zu öffnen.
-    Gibt True zurück, wenn das Öffnen gelingt, sonst False.
-    """
-    # Temporär das gewünschte Backend setzen
+    """Teste, ob ein Mini‑GTK‑Fenster mit dem angegebenen Backend funktioniert."""
     env = os.environ.copy()
     env["GDK_BACKEND"] = backend
-
-    # Wir starten ein kurzes Python‑Snippet in einem Sub‑Process,
-    # das nur ein leeres GTK‑Fenster erzeugt und sofort schließt.
     test_code = (
         "import gi; "
-        "gi.require_version('Gtk', '3.0'); "
+        "gi.require_version('Gtk', '4.0'); "
         "from gi.repository import Gtk; "
         "w = Gtk.Window(); "
         "w.connect('destroy', Gtk.main_quit); "
-        "w.show_all(); "
+        "w.show(); "
         "Gtk.main_quit()"
     )
     try:
@@ -54,60 +39,79 @@ def _backend_works(backend: str) -> bool:
     except Exception:
         return False
 
-
-# 1️⃣ Prüfen, welches Backend das System aktuell anbietet
-# (Wayland ist häufig die Default‑Option, X11 ist immer verfügbar)
-preferred_backend = None
+# Wähle ein funktionierendes Backend (Wayland bevorzugt)
 if _backend_works("wayland"):
-    preferred_backend = "wayland"
+    os.environ["GDK_BACKEND"] = "wayland"
 elif _backend_works("x11"):
-    preferred_backend = "x11"
+    os.environ["GDK_BACKEND"] = "x11"
 else:
-    # Sehr ungewöhnlich – weder Wayland noch X11 funktionieren.
-    # Wir geben eine klare Fehlermeldung aus und beenden das Programm.
     sys.stderr.write(
-        "❌ Weder Wayland noch X11 konnten ein GTK‑Fenster öffnen. "
-        "Stelle sicher, dass ein grafischer Server läuft.\n"
+        "❌ Weder Wayland noch X11 konnten ein GTK‑Fenster öffnen.\n"
     )
     sys.exit(1)
 
-# 2️⃣ Setze das gefundene Backend **für den aktuellen Prozess**
-os.environ["GDK_BACKEND"] = preferred_backend
-
-# ----------------------------------------------------------------------
-#  1️⃣  GTK‑Import – jetzt erst, nachdem das Backend festgelegt ist
-# ----------------------------------------------------------------------
+# ------------------------------------------------------------
+# 1️⃣ GTK‑Import (nur GTK 4)
+# ------------------------------------------------------------
 import gi
+gi.require_version('Gtk', '4.0')
+from gi.repository import Gtk, GLib
 
-# Versuche zuerst GTK 4, fall back zu GTK 3 (wie im vorherigen Patch)
-try:
-    gi.require_version('Gtk', '4.0')
-    from gi.repository import Gtk, GLib
-    GTK_VERSION = 4
-except (ImportError, ValueError):
-    gi.require_version('Gtk', '3.0')
-    from gi.repository import Gtk, GLib
-    GTK_VERSION = 3
+GTK_VERSION = 4   # fest auf 4 gesetzt – kein GTK‑3‑Fallback mehr
 
-# ----------------------------------------------------------------------
-#  2️⃣  Rest des Programms (DataManager, UI‑Wrapper, etc.)
-# ----------------------------------------------------------------------
-import json, csv
-from datetime import datetime
-from pathlib import Path
+# ------------------------------------------------------------
+# 2️⃣ Hilfs‑Utilities (nur GTK 4‑Varianten)
+# ------------------------------------------------------------
+def add_child(container, widget):
+    """GTK 4‑Wrapper: set_child()"""
+    container.set_child(widget)
 
-# ------------------- DataManager (unverändert) -----------------------
+
+def show_dialog(parent, title, message,
+                buttons=("Abbrechen", "Löschen")):
+    """
+    Einheitlicher Bestätigungsdialog für GTK 4 (AlertDialog).
+    Gibt den Index des geklickten Buttons zurück.
+    """
+    dlg = Gtk.AlertDialog()
+    dlg.set_message(title)
+    dlg.set_detail(message)
+    dlg.set_buttons(list(buttons))
+    dlg.set_default_button(0)
+    dlg.set_cancel_button(0)
+    result = dlg.choose(parent, None, lambda d, r: None)
+    return dlg.choose_finish(result)
+
+# ------------------------------------------------------------
+# 3️⃣ Pfad‑Logik – wo sollen die Daten abgelegt werden?
+# ------------------------------------------------------------
+def get_default_path() -> Path:
+    """Standard‑Datei: ~/.local/share/zaehlerstaende/zaehlerstaende.json"""
+    base = Path.home() / ".local" / "share" / "zaehlerstaende"
+    base.mkdir(parents=True, exist_ok=True)
+    return base / "zaehlerstaende.json"
+
+
 class DataManager:
-    """Verwaltet das Speichern und Laden der Daten"""
+    """
+    Verwaltet das Laden/Speichern der Zählerstände.
+    Der Pfad kann beim Instanziieren überschrieben werden:
+        dm = DataManager(speicherort="/mein/pfad/meine_zähler.json")
+    """
 
-    def __init__(self, datei="zaehlerstaende.json", pfad=None):
-        if pfad is None:
-            base_dir = Path.home() / ".local" / "share" / "zaehlerstaende"
+    def __init__(self, speicherort: str | Path | None = None):
+        if speicherort is None:
+            self.datei = get_default_path()
         else:
-            base_dir = Path(pfad).expanduser().resolve()
-        base_dir.mkdir(parents=True, exist_ok=True)
-        self.datei = base_dir / datei
+            p = Path(speicherort).expanduser().resolve()
+            if p.is_dir():
+                p.mkdir(parents=True, exist_ok=True)
+                self.datei = p / "zaehlerstaende.json"
+            else:
+                p.parent.mkdir(parents=True, exist_ok=True)
+                self.datei = p
 
+    # ------------------- Laden / Speichern -------------------
     def laden(self):
         if self.datei.exists():
             with open(self.datei, "r", encoding="utf-8") as f:
@@ -118,6 +122,7 @@ class DataManager:
         with open(self.datei, "w", encoding="utf-8") as f:
             json.dump(daten, f, indent=2)
 
+    # ------------------- CSV‑Export -------------------
     def export_csv(self, daten, ziel=None):
         if not ziel:
             ziel = Path.home() / f"zaehlerstaende_{datetime.now():%Y%m%d_%H%M%S}.csv"
@@ -133,47 +138,9 @@ class DataManager:
                 ])
         return ziel
 
-# ------------------- GTK‑Hilfswrapper -------------------------------
-def add_child(container, widget):
-    """Wrapper für set_child (GTK 4) bzw. add (GTK 3)."""
-    if GTK_VERSION == 4:
-        container.set_child(widget)
-    else:
-        container.add(widget)
-
-def show_dialog(parent, title, message,
-                buttons=("Abbrechen", "Löschen")):
-    """
-    Einheitlicher Bestätigungsdialog.
-    GTK 4 → Gtk.AlertDialog, GTK 3 → Gtk.MessageDialog.
-    Gibt den Index des gedrückten Buttons zurück.
-    """
-    if GTK_VERSION == 4:
-        dlg = Gtk.AlertDialog()
-        dlg.set_message(title)
-        dlg.set_detail(message)
-        dlg.set_buttons(list(buttons))
-        dlg.set_default_button(0)
-        dlg.set_cancel_button(0)
-        result = dlg.choose(parent, None, lambda d, r: None)
-        return dlg.choose_finish(result)
-    else:
-        dlg = Gtk.MessageDialog(
-            transient_for=parent,
-            flags=0,
-            type=Gtk.MessageType.WARNING,
-            buttons=Gtk.ButtonsType.NONE,
-            message_format=title,
-        )
-        dlg.format_secondary_text(message)
-        for idx, txt in enumerate(buttons):
-            dlg.add_button(txt, idx)
-        dlg.set_default_response(0)
-        resp = dlg.run()
-        dlg.destroy()
-        return resp
-
-# ------------------- EingabeWidget (unverändert) -------------------
+# ------------------------------------------------------------
+# 4️⃣ UI‑Komponenten (GTK 4‑only)
+# ------------------------------------------------------------
 class EingabeWidget(Gtk.Box):
     """Widget für die Eingabe von Zählerständen"""
 
@@ -222,20 +189,23 @@ class EingabeWidget(Gtk.Box):
         self.gas_entry.set_text("")
         self.wasser_entry.set_text("")
 
-# ------------------- Hauptfenster -------------------------------
+# ------------------------------------------------------------
+# 5️⃣ Hauptfenster (GTK 4‑only)
+# ------------------------------------------------------------
 class ZaehlerstandApp(Gtk.ApplicationWindow):
     """Hauptfenster der Anwendung"""
 
-    def __init__(self, app, datenpfad=None):
+    def __init__(self, app, speicherort=None):
         super().__init__(application=app, title="Zählerstände Verwaltung")
         self.set_default_size(600, 500)
 
-        self.data_manager = DataManager(pfad=datenpfad)
+        # DataManager bekommt den optionalen Pfad
+        self.data_manager = DataManager(speicherort=speicherort)
         self.daten = self.data_manager.laden()
         self._erstelle_ui()
         self.aktualisiere_liste()
 
-    # UI‑Aufbau ----------------------------------------------------
+    # ------------------- UI-Aufbau -------------------
     def _erstelle_ui(self):
         main_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=10)
         for side in ("top", "bottom", "start", "end"):
@@ -273,14 +243,8 @@ class ZaehlerstandApp(Gtk.ApplicationWindow):
         for side in ("top", "bottom", "start", "end"):
             getattr(self.liste_box, f"set_margin_{side}")(10)
 
-        # Unterschiedliche API für das Einbetten des ScrolledWindow
-        if GTK_VERSION == 4:
-            scrolled.set_child(self.liste_box)
-            liste_frame.set_child(scrolled)
-        else:
-            scrolled.add(self.liste_box)
-            liste_frame.add(scrolled)
-
+        scrolled.set_child(self.liste_box)
+        liste_frame.set_child(scrolled)
         main_box.append(liste_frame)
 
         # Aktions‑Buttons
@@ -297,7 +261,7 @@ class ZaehlerstandApp(Gtk.ApplicationWindow):
 
         add_child(self, main_box)
 
-    # Logik ---------------------------------------------------------
+    # ------------------- Logik -------------------
     def speichern_clicked(self, button):
         daten = self.eingabe_widget.get_daten()
         if not all(daten.values()):
@@ -358,29 +322,47 @@ class ZaehlerstandApp(Gtk.ApplicationWindow):
     def zeige_status(self, text, farbe):
         self.status_label.set_markup(f"<span color='{farbe}'>{text}</span>")
 
-# ------------------- Application-Klasse ---------------------------
+# ------------------------------------------------------------
+# 6️⃣ Application‑Klasse
+# ------------------------------------------------------------
 class ZaehlerstandeAnwendung(Gtk.Application):
-    """GTK‑Application – übernimmt optionalen Daten‑Pfad"""
+    """GTK‑Application – nimmt optional einen Speicherort entgegen."""
 
-    def __init__(self, datenpfad=None):
+    def __init__(self, speicherort=None):
         super().__init__(application_id='de.beispiel.zaehlerstaende')
-        self.datenpfad = datenpfad
+        self.speicherort = speicherort
 
     def do_activate(self):
-        win = ZaehlerstandApp(self, datenpfad=self.datenpfad)
+        win = ZaehlerstandApp(self, speicherort=self.speicherort)
         win.present()
 
-# ------------------- Einstiegspunkt -------------------------------
+# ------------------------------------------------------------
+# 7️⃣ Einstiegspunkt – für Skript‑Aufruf oder Paket‑Import
+# ------------------------------------------------------------
+def run_app(speicherort: str | Path | None = None):
+    """
+    Praktische Helper‑Funktion, damit du das GUI aus jedem Python‑Code starten kannst:
+
+    >>> from zaehler_gui.app import run_app
+    >>> run_app("/mein/pfad/meine_zähler.json")
+    """
+    app = ZaehlerstandeAnwendung(speicherort=speicherort)
+    return app.run(None)   # None = keine argv‑Übergabe
+
 def main():
     """
-    Haupteinstiegspunkt.
-    Hier kannst du den Zielordner für die JSON‑Datei festlegen,
-    z. B. über eine Umgebungsvariable, ein CLI‑Argument o. ä.
+    Wird ausgeführt, wenn du das Modul direkt startest:
+        python -m zaehler_gui.app
+    oder
+        python app.py
+
+    Optional kannst du über die Umgebungsvariable ZAHLER_PFAD einen
+    benutzerdefinierten Speicherort setzen:
+
+        ZAHLER_PFAD=/mein/pfad/meine_zähler.json python -m zaehler_gui.app
     """
-    # Beispiel: Benutzer definiert einen eigenen Ordner
-    benutzer_pfad = "/tmp/meine_zaehlerdaten"   # <-- anpassen, falls gewünscht
-    app = ZaehlerstandeAnwendung(datenpfad=benutzer_pfad)
-    return app.run()
+    speicherort = os.getenv("ZAHLER_PFAD")
+    run_app(speicherort)
 
 if __name__ == '__main__':
     main()
