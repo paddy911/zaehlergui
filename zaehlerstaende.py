@@ -627,14 +627,5 @@ def main():
     Hier kannst du den Zielordner für die JSON‑Datei festlegen,
     z. B. über eine Umgebungsvariable, ein CLI‑Argument o. ä.
     """
-    # CLI‑Argument hat Vorrang, dann gespeicherte Config, sonst Standard
-    cli_path = None
-    if len(sys.argv) > 1:
-        cli_path = sys.argv[1]
-    cfg = load_config()
-    benutzer_pfad = cli_path or cfg.get('datenpfad') or None
-    app = ZaehlerstandeAnwendung(datenpfad=benutzer_pfad)
-    return app.run()
-
 if __name__ == '__main__':
     main()
