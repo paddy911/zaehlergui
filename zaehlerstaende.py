@@ -258,7 +258,7 @@ class EingabeWidget(Gtk.Box):
         self.gas_entry.set_text("")
         self.wasser_entry.set_text("")
 
-# ------------------- Einstellungen-Fenster ---------------------
+# ------------------- Einstellungen-Fenster --------------------
 class SettingsWindow(Gtk.Window):
     """Separates Fenster für Einstellungen (Datenpfad-Auswahl)"""
 
