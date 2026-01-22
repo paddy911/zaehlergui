@@ -3,6 +3,7 @@
 Zählerstände Verwaltung — Haupteinstiegspunkt
 
 Refaktoriert mit modularer Struktur für korrekte GTK-Fenster-Verwaltung.
+Unterstützt sowohl GTK 3 als auch GTK 4 sowie Wayland und X11.
 """
 
 import os
@@ -41,7 +42,18 @@ else:
 
 os.environ["GDK_BACKEND"] = preferred_backend
 
-# ===== Jetzt Module laden =====
+# Zeige dem Benutzer, welches Backend und welche GTK-Version verwendet wird
+sys.stderr.write(f"ℹ️  Verwende Backend: {preferred_backend.upper()}\n")
+
+# ===== Jetzt gtk_compat laden (dies führt GTK-Erkennung durch) =====
+try:
+    import gtk_compat
+    sys.stderr.write(f"ℹ️  Verwende GTK {gtk_compat.GTK_VERSION}.0\n")
+except ImportError as e:
+    sys.stderr.write(f"❌ Fehler beim Laden von gtk_compat: {e}\n")
+    sys.exit(1)
+
+# ===== Weitere Module laden =====
 try:
     from data_manager import load_config
     from main_window import ZaehlerstandeAnwendung

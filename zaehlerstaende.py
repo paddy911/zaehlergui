@@ -19,79 +19,52 @@ Verwaltet Strom-, Gas- und Wasserzählerstände
 
 import os
 import sys
-import subprocess
 
-def _backend_works(backend: str) -> bool:
-    """
-    Versucht, ein minimal‑GTK‑Fenster mit dem angegebenen Backend zu öffnen.
-    Gibt True zurück, wenn das Öffnen gelingt, sonst False.
-    """
-    # Temporär das gewünschte Backend setzen
-    env = os.environ.copy()
-    env["GDK_BACKEND"] = backend
+# ===== Backend & GTK-Version Erkennung =====
+# Dies wird jetzt von gtk_compat übernommen
+# Die Wayland/X11-Erkennung aus __main__.py wird hier aufgerufen
 
-    # Wir starten ein kurzes Python‑Snippet in einem Sub‑Process,
-    # das nur ein leeres GTK‑Fenster erzeugt und sofort schließt.
-    test_code = (
-        "import gi; "
-        "gi.require_version('Gtk', '3.0'); "
-        "from gi.repository import Gtk; "
-        "w = Gtk.Window(); "
-        "w.connect('destroy', Gtk.main_quit); "
-        "w.show_all(); "
-        "Gtk.main_quit()"
-    )
-    try:
-        subprocess.run(
-            [sys.executable, "-c", test_code],
-            env=env,
-            stdout=subprocess.DEVNULL,
-            stderr=subprocess.DEVNULL,
-            timeout=3,
-            check=True,
+# Wenn direktlich aufgerufen: Backend-Erkennung durchführen
+if __name__ == '__main__':
+    import subprocess
+    
+    def _backend_works(backend: str) -> bool:
+        """Testet, ob ein GTK-Backend funktioniert."""
+        env = os.environ.copy()
+        env["GDK_BACKEND"] = backend
+        test_code = (
+            "import gi; gi.require_version('Gtk', '3.0'); "
+            "from gi.repository import Gtk; w = Gtk.Window(); "
+            "w.connect('destroy', Gtk.main_quit); w.show_all(); Gtk.main_quit()"
         )
-        return True
-    except Exception:
-        return False
+        try:
+            subprocess.run([sys.executable, "-c", test_code], env=env,
+                          stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
+                          timeout=3, check=True)
+            return True
+        except Exception:
+            return False
+    
+    # Setze das funktionsfähige Backend
+    preferred_backend = None
+    if _backend_works("wayland"):
+        preferred_backend = "wayland"
+    elif _backend_works("x11"):
+        preferred_backend = "x11"
+    else:
+        sys.stderr.write("❌ Weder Wayland noch X11 funktionieren.\n")
+        sys.exit(1)
+    
+    os.environ["GDK_BACKEND"] = preferred_backend
 
+# Importiere die Kompatibilitätsschicht
+import gtk_compat as GtkCompat
+from gtk_compat import add_child, show_all, get_children, remove_child, show_message_dialog
 
-# 1️⃣ Prüfen, welches Backend das System aktuell anbietet
-# (Wayland ist häufig die Default‑Option, X11 ist immer verfügbar)
-preferred_backend = None
-if _backend_works("wayland"):
-    preferred_backend = "wayland"
-elif _backend_works("x11"):
-    preferred_backend = "x11"
-else:
-    # Sehr ungewöhnlich – weder Wayland noch X11 funktionieren.
-    # Wir geben eine klare Fehlermeldung aus und beenden das Programm.
-    sys.stderr.write(
-        "❌ Weder Wayland noch X11 konnten ein GTK‑Fenster öffnen. "
-        "Stelle sicher, dass ein grafischer Server läuft.\n"
-    )
-    sys.exit(1)
-
-# 2️⃣ Setze das gefundene Backend **für den aktuellen Prozess**
-os.environ["GDK_BACKEND"] = preferred_backend
-
-# ----------------------------------------------------------------------
-#  1️⃣  GTK‑Import – jetzt erst, nachdem das Backend festgelegt ist
-# ----------------------------------------------------------------------
-import gi
-
-# Versuche zuerst GTK 4, fall back zu GTK 3 (wie im vorherigen Patch)
-try:
-    gi.require_version('Gtk', '4.0')
-    from gi.repository import Gtk, GLib
-    GTK_VERSION = 4
-except (ImportError, ValueError):
-    gi.require_version('Gtk', '3.0')
-    from gi.repository import Gtk, GLib
-    GTK_VERSION = 3
-
-# ----------------------------------------------------------------------
-#  2️⃣  Rest des Programms (DataManager, UI‑Wrapper, etc.)
-# ----------------------------------------------------------------------
+# GTK-Bindings laden
+Gtk = GtkCompat.Gtk
+GLib = GtkCompat.GLib
+GTK_VERSION = GtkCompat.GTK_VERSION
 import json, csv
 from datetime import datetime
 from pathlib import Path

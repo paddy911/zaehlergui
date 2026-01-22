@@ -1,11 +1,12 @@
 """
 SettingsWindow: Separates Fenster für Datenpfad-Einstellungen
 """
-import gi
-gi.require_version('Gtk', '3.0')
-from gi.repository import Gtk
 from pathlib import Path
-from ui_helpers import show_dialog, show_window, GTK_VERSION
+import gtk_compat as GtkCompat
+from gtk_compat import add_child, show_all
+
+Gtk = GtkCompat.Gtk
+GTK_VERSION = GtkCompat.GTK_VERSION
 
 
 class SettingsWindow(Gtk.Window):
@@ -26,7 +27,7 @@ class SettingsWindow(Gtk.Window):
         # Titel
         titel = Gtk.Label(label="<b>Datenpfad-Einstellungen</b>")
         titel.set_use_markup(True)
-        main_box.append(titel)
+        add_child(main_box, titel)
 
         # Eingabe‑Feld für Pfad
         path_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=10)
@@ -37,35 +38,32 @@ class SettingsWindow(Gtk.Window):
         self.path_entry = Gtk.Entry()
         self.path_entry.set_text(current_path)
         self.path_entry.set_editable(True)
-        path_box.append(path_label)
-        path_box.append(self.path_entry)
+        add_child(path_box, path_label)
+        add_child(path_box, self.path_entry)
         
         browse_btn = Gtk.Button(label="Durchsuchen...")
         browse_btn.connect("clicked", self.on_browse)
-        path_box.append(browse_btn)
+        add_child(path_box, browse_btn)
         
-        main_box.append(path_box)
+        add_child(main_box, path_box)
 
         # Info‑Text
         info_lbl = Gtk.Label(label="Geben Sie einen vollständigen Dateipfad ein oder wählen Sie eine Datei.\nZ.B.: /mnt/nas/zaehler.json oder ~/Dokumente/zaehler.json")
         info_lbl.set_wrap(True)
-        main_box.append(info_lbl)
+        add_child(main_box, info_lbl)
 
         # Buttons
         button_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=10)
         cancel_btn = Gtk.Button(label="Abbrechen")
         cancel_btn.connect("clicked", lambda w: self.destroy())
-        button_box.append(cancel_btn)
+        add_child(button_box, cancel_btn)
         
         apply_btn = Gtk.Button(label="Speichern")
         apply_btn.connect("clicked", self.on_apply_btn)
-        button_box.append(apply_btn)
+        add_child(button_box, apply_btn)
         
-        main_box.append(button_box)
-        if GTK_VERSION == 4:
-            self.set_child(main_box)
-        else:
-            self.add(main_box)
+        add_child(main_box, button_box)
+        add_child(self, main_box)
 
     def on_browse(self, button):
         """Öffnet einen Datei-Auswahl-Dialog"""
@@ -97,10 +95,11 @@ class SettingsWindow(Gtk.Window):
         """Wendet den neuen Pfad an"""
         pfad = self.path_entry.get_text().strip()
         if not pfad:
-            show_dialog(
+            GtkCompat.show_message_dialog(
                 parent=self,
                 title="Fehler",
                 message="Bitte einen gültigen Dateipfad eingeben!",
+                dialog_type="error",
                 buttons=["OK"]
             )
             return

@@ -1,14 +1,16 @@
 """
 MainWindow: Hauptfenster der Zählerstände-Verwaltung
 """
-import gi
-gi.require_version('Gtk', '3.0')
-from gi.repository import Gtk
 from pathlib import Path
 from datetime import datetime
 from data_manager import DataManager, save_config
-from ui_helpers import add_child, show_dialog, show_window, GTK_VERSION
+import gtk_compat as GtkCompat
+from gtk_compat import add_child, show_all
 from settings_window import SettingsWindow
+
+# Gtk-Bindings von der Kompatibilitätsschicht laden
+Gtk = GtkCompat.Gtk
+GTK_VERSION = GtkCompat.GTK_VERSION
 
 
 class EingabeWidget(Gtk.Box):
@@ -40,9 +42,9 @@ class EingabeWidget(Gtk.Box):
             entry.set_text(text)
         if placeholder:
             entry.set_placeholder_text(placeholder)
-        box.append(label)
-        box.append(entry)
-        self.append(box)
+        add_child(box, label)
+        add_child(box, entry)
+        add_child(self, box)
         return entry
 
     def get_daten(self):
@@ -81,14 +83,14 @@ class ZaehlerstandApp(Gtk.ApplicationWindow):
         top_row = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=10)
         titel = Gtk.Label(label="<big><b>Zählerstände erfassen</b></big>")
         titel.set_use_markup(True)
-        top_row.append(titel)
+        add_child(top_row, titel)
         settings_btn = Gtk.Button(label="Einstellungen")
         settings_btn.connect("clicked", self.open_settings)
-        top_row.append(settings_btn)
+        add_child(top_row, settings_btn)
         create_btn = Gtk.Button(label="Neue Datei erstellen")
         create_btn.connect("clicked", self.create_new_file)
-        top_row.append(create_btn)
-        main_box.append(top_row)
+        add_child(top_row, create_btn)
+        add_child(main_box, top_row)
 
         # Anzeige des aktuell verwendeten Datenpfads
         full_path = str(self.data_manager.datei)
@@ -102,23 +104,23 @@ class ZaehlerstandApp(Gtk.ApplicationWindow):
             self.current_path_label.set_tooltip_text(full_path)
         except Exception:
             pass
-        main_box.append(self.current_path_label)
+        add_child(main_box, self.current_path_label)
 
         # Eingabebereich
         eingabe_frame = Gtk.Frame()
         eingabe_frame.set_label("Neue Ablesung")
         self.eingabe_widget = EingabeWidget()
         add_child(eingabe_frame, self.eingabe_widget)
-        main_box.append(eingabe_frame)
+        add_child(main_box, eingabe_frame)
 
         # Speicher‑Button
         speichern_btn = Gtk.Button(label="Zählerstand speichern")
         speichern_btn.connect("clicked", self.speichern_clicked)
-        main_box.append(speichern_btn)
+        add_child(main_box, speichern_btn)
 
         # Status‑Label
         self.status_label = Gtk.Label(label="")
-        main_box.append(self.status_label)
+        add_child(main_box, self.status_label)
 
         # Liste der Einträge
         liste_frame = Gtk.Frame()
@@ -131,26 +133,22 @@ class ZaehlerstandApp(Gtk.ApplicationWindow):
         for side in ("top", "bottom", "start", "end"):
             getattr(self.liste_box, f"set_margin_{side}")(10)
 
-        if GTK_VERSION == 4:
-            scrolled.set_child(self.liste_box)
-            liste_frame.set_child(scrolled)
-        else:
-            scrolled.add(self.liste_box)
-            liste_frame.add(scrolled)
+        add_child(scrolled, self.liste_box)
+        add_child(liste_frame, scrolled)
 
-        main_box.append(liste_frame)
+        add_child(main_box, liste_frame)
 
         # Aktions‑Buttons
         button_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=10)
         export_btn = Gtk.Button(label="Als CSV exportieren")
         export_btn.connect("clicked", self.export_clicked)
-        button_box.append(export_btn)
+        add_child(button_box, export_btn)
 
         loeschen_btn = Gtk.Button(label="Alle Daten löschen")
         loeschen_btn.connect("clicked", self.alle_loeschen)
-        button_box.append(loeschen_btn)
+        add_child(button_box, loeschen_btn)
 
-        main_box.append(button_box)
+        add_child(main_box, button_box)
         add_child(self, main_box)
 
     def speichern_clicked(self, button):
@@ -174,11 +172,12 @@ class ZaehlerstandApp(Gtk.ApplicationWindow):
             self.zeige_status("Ungültige Zahlen eingegeben!", "red")
 
     def aktualisiere_liste(self):
-        while child := self.liste_box.get_first_child():
-            self.liste_box.remove(child)
+        children = GtkCompat.get_children(self.liste_box)
+        for child in children:
+            GtkCompat.remove_child(self.liste_box, child)
 
         if not self.daten:
-            self.liste_box.append(Gtk.Label(label="Noch keine Ablesungen vorhanden"))
+            add_child(self.liste_box, Gtk.Label(label="Noch keine Ablesungen vorhanden"))
             return
 
         for eintrag in reversed(self.daten):
@@ -188,7 +187,7 @@ class ZaehlerstandApp(Gtk.ApplicationWindow):
                    f"Wasser: {eintrag['wasser']} m³")
             lbl = Gtk.Label(label=txt)
             lbl.set_xalign(0)
-            self.liste_box.append(lbl)
+            add_child(self.liste_box, lbl)
 
     def export_clicked(self, button):
         if not self.daten:
@@ -198,7 +197,7 @@ class ZaehlerstandApp(Gtk.ApplicationWindow):
         self.zeige_status(f"✓ Exportiert nach: {ziel}", "green")
 
     def alle_loeschen(self, button):
-        idx = show_dialog(
+        idx = GtkCompat.show_message_dialog(
             parent=self,
             title="Wirklich alle Daten löschen?",
             message="Diese Aktion kann nicht rückgängig gemacht werden!",
@@ -217,7 +216,7 @@ class ZaehlerstandApp(Gtk.ApplicationWindow):
         """Öffnet das Settings-Fenster"""
         current_path = str(self.data_manager.datei)
         settings_win = SettingsWindow(self, current_path, self.apply_settings)
-        show_window(settings_win)
+        show_all(settings_win)
 
     def apply_settings(self, new_path):
         """Wendet neue Pfad-Einstellungen an"""
@@ -225,7 +224,7 @@ class ZaehlerstandApp(Gtk.ApplicationWindow):
             p = Path(new_path).expanduser().resolve()
             # Falls Datei nicht existiert, fragen ob anlegen
             if not p.exists():
-                idx = show_dialog(
+                idx = GtkCompat.show_message_dialog(
                     parent=self,
                     title="Datei existiert nicht",
                     message=f"Die Datei {p} existiert nicht. Soll sie erstellt werden?",
@@ -283,7 +282,7 @@ class ZaehlerstandApp(Gtk.ApplicationWindow):
                 p.parent.mkdir(parents=True, exist_ok=True)
                 if p.exists():
                     # Bestätigungsdialog, falls Datei schon existiert
-                    idx = show_dialog(
+                    idx = GtkCompat.show_message_dialog(
                         parent=self,
                         title="Datei existiert bereits",
                         message=f"Die Datei {p} existiert bereits. Überschreiben?",
