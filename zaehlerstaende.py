@@ -258,6 +258,101 @@ class EingabeWidget(Gtk.Box):
         self.gas_entry.set_text("")
         self.wasser_entry.set_text("")
 
+# ------------------- Einstellungen-Fenster ---------------------
+class SettingsWindow(Gtk.Window):
+    """Separates Fenster für Einstellungen (Datenpfad-Auswahl)"""
+
+    def __init__(self, parent, current_path: str, on_apply_callback):
+        super().__init__(type=Gtk.WindowType.TOPLEVEL)
+        self.set_transient_for(parent)
+        self.set_modal(True)
+        self.set_title("Einstellungen")
+        self.set_default_size(600, 200)
+        self.on_apply = on_apply_callback
+
+        main_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=15)
+        for side in ("top", "bottom", "start", "end"):
+            getattr(main_box, f"set_margin_{side}")(20)
+
+        # Titel
+        titel = Gtk.Label(label="<b>Datenpfad-Einstellungen</b>")
+        titel.set_use_markup(True)
+        main_box.append(titel)
+
+        # Eingabe‑Feld für Pfad
+        path_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=10)
+        path_label = Gtk.Label(label="Dateipfad:")
+        path_label.set_size_request(120, -1)
+        path_label.set_xalign(0)
+        
+        self.path_entry = Gtk.Entry()
+        self.path_entry.set_text(current_path)
+        self.path_entry.set_editable(True)
+        path_box.append(path_label)
+        path_box.append(self.path_entry)
+        
+        browse_btn = Gtk.Button(label="Durchsuchen...")
+        browse_btn.connect("clicked", self.on_browse)
+        path_box.append(browse_btn)
+        
+        main_box.append(path_box)
+
+        # Info‑Text
+        info_lbl = Gtk.Label(label="Geben Sie einen vollständigen Dateipfad ein oder wählen Sie eine Datei.")
+        info_lbl.set_wrap(True)
+        main_box.append(info_lbl)
+
+        # Buttons
+        button_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=10)
+        cancel_btn = Gtk.Button(label="Abbrechen")
+        cancel_btn.connect("clicked", lambda w: self.destroy())
+        button_box.append(cancel_btn)
+        
+        apply_btn = Gtk.Button(label="Speichern")
+        apply_btn.connect("clicked", self.on_apply_btn)
+        button_box.append(apply_btn)
+        
+        main_box.append(button_box)
+        self.add(main_box)
+
+    def on_browse(self, button):
+        action = Gtk.FileChooserAction.OPEN
+        dlg = Gtk.FileChooserDialog(
+            title="Zählerstände‑Datei wählen",
+            transient_for=self,
+            flags=0,
+            action=action,
+        )
+        dlg.add_button("Abbrechen", Gtk.ResponseType.CANCEL)
+        dlg.add_button("Auswählen", Gtk.ResponseType.OK)
+        try:
+            filt = Gtk.FileFilter()
+            filt.set_name("JSON Dateien")
+            filt.add_pattern("*.json")
+            dlg.add_filter(filt)
+        except Exception:
+            pass
+
+        resp = dlg.run()
+        if resp == Gtk.ResponseType.OK:
+            ausgew = dlg.get_filename()
+            if ausgew:
+                self.path_entry.set_text(ausgew)
+        dlg.destroy()
+
+    def on_apply_btn(self, button):
+        pfad = self.path_entry.get_text().strip()
+        if not pfad:
+            show_dialog(
+                parent=self,
+                title="Fehler",
+                message="Bitte einen gültigen Dateipfad eingeben!",
+                buttons=["OK"]
+            )
+            return
+        self.on_apply(pfad)
+        self.destroy()
+
 # ------------------- Hauptfenster -------------------------------
 class ZaehlerstandApp(Gtk.ApplicationWindow):
     """Hauptfenster der Anwendung"""
@@ -417,43 +512,44 @@ class ZaehlerstandApp(Gtk.ApplicationWindow):
         self.status_label.set_markup(f"<span color='{farbe}'>{text}</span>")
 
     def open_settings(self, button):
-        # Datei auswählen (direkte .json‑Datei)
-        action = Gtk.FileChooserAction.OPEN
-        dlg = Gtk.FileChooserDialog(
-            title="Zählerstände‑Datei wählen",
-            transient_for=self,
-            flags=0,
-            action=action,
-        )
-        dlg.add_button("Abbrechen", Gtk.ResponseType.CANCEL)
-        dlg.add_button("Auswählen", Gtk.ResponseType.OK)
+        # Aktuellen Pfad anzeigen
+        current_path = str(self.data_manager.datei)
+        # Settings-Fenster öffnen mit Callback
+        settings_win = SettingsWindow(self, current_path, self.apply_settings)
+        settings_win.show_all()
 
-        # Filter für JSON‑Dateien
+    def apply_settings(self, new_path):
+        # Neuer Pfad wird angewendet
         try:
-            filt = Gtk.FileFilter()
-            filt.set_name("JSON Dateien")
-            filt.add_pattern("*.json")
-            dlg.add_filter(filt)
-        except Exception:
-            pass
-
-        resp = dlg.run()
-        if resp == Gtk.ResponseType.OK:
-            ausgew = dlg.get_filename()
-            if ausgew:
-                # Setze neue Datei als Datenquelle, lade Daten neu und speichere Config
-                self.data_manager = DataManager(pfad=ausgew)
-                self.daten = self.data_manager.laden()
-                save_config({'datenpfad': ausgew})
-                # Pfad‑Anzeige aktualisieren
-                try:
-                    self.current_path_label.set_text(f"Pfad: {self.data_manager.datei}")
-                    self.current_path_label.set_tooltip_text(str(self.data_manager.datei))
-                except Exception:
-                    pass
-                self.aktualisiere_liste()
-                self.zeige_status(f"Datei gesetzt: {ausgew}", "green")
-        dlg.destroy()
+            p = Path(new_path).expanduser().resolve()
+            # Falls Datei nicht existiert, fragen ob anlegen
+            if not p.exists():
+                idx = show_dialog(
+                    parent=self,
+                    title="Datei existiert nicht",
+                    message=f"Die Datei {p} existiert nicht. Soll sie erstellt werden?",
+                    buttons=["Abbrechen", "Erstellen"],
+                )
+                if idx != 1:
+                    self.zeige_status("Änderung abgebrochen", "red")
+                    return
+                p.parent.mkdir(parents=True, exist_ok=True)
+                with open(p, 'w', encoding='utf-8') as f:
+                    f.write('[]')
+            # Datenpfad setzen
+            self.data_manager = DataManager(pfad=str(p))
+            self.daten = self.data_manager.laden()
+            save_config({'datenpfad': str(p)})
+            # UI aktualisieren
+            try:
+                self.current_path_label.set_text(f"Pfad: {self.data_manager.datei}")
+                self.current_path_label.set_tooltip_text(str(self.data_manager.datei))
+            except Exception:
+                pass
+            self.aktualisiere_liste()
+            self.zeige_status(f"✓ Pfad gespeichert: {p}", "green")
+        except Exception as e:
+            self.zeige_status(f"❌ Fehler: {e}", "red")
 
     def create_new_file(self, button):
         # Datei speichern (Save dialog) zur Anlage einer neuen leeren JSON
