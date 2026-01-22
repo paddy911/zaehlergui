@@ -1,12 +1,14 @@
 📄 README – Installation & Desktop‑Verknüpfung für Zählerstände
 
-Dieses Repository enthält ein Bash‑Installations‑Script, dass:
+Dieses Repository enthält ein Bash‑Installations‑Script (`install.sh`), das das gesamte Programmverzeichnis
+an einen Zielort installiert, ein Starter‑Skript in den PATH legt und eine Desktop‑Verknüpfung anlegt.
 
-    - Das Python‑Programm zaehlerstaende.py nach /usr/local/bin/ kopiert
-    - Ein 48 × 48 px‑Icon an den richtigen Ort legt
-    - Einen .desktop‑Eintrag im persönlichen Anwendungsordner erstellt
-    - (optional) die Desktop‑Datenbank aktualisiert und
-    - Eine Verknüpfung auf dem Schreibtisch anlegt.
+Wichtig: Das Skript unterstützt zwei Modi:
+
+- `--system` (Standard): systemweite Installation nach `/usr/local/share/zaehlerstaende` und Starter in `/usr/local/bin`.
+- `--user`: Benutzerlokale Installation nach `~/.local/share/zaehlerstaende` und Starter in `~/.local/bin` (kein sudo erforderlich).
+
+Optional kann mit `--prefix DIR` ein alternatives Zielverzeichnis angegeben werden.
 
 Inhaltsverzeichnis
 
@@ -41,22 +43,35 @@ Dateistruktur im Repo
 Falls du das Icon in einem Unterordner (data/zaehler.png) hast, passe einfach die Variable ICON_SRC im Skript an.
 Installations‑Schritte (einmalig)
 
-    Repository klonen / Dateien holen
+1. Repository klonen / Dateien holen
 
-    git clone https://github.com/dein‑account/zaehlerstaende.git
-    cd zaehlerstaende
+    git clone https://github.com/<dein-account>/zaehlergui.git
+    cd zaehlergui
 
-Ausführungsrechte für das Skript setzen
+2. Skript ausführbar machen
 
-chmod +x install_zaehlerstaende.sh
+    chmod +x install.sh
 
-Skript ausführen (fragt nach deinem Passwort für sudo)
+3. Installation durchführen
 
-./install_zaehlerstaende.sh
+    - Systemweit (Standard, benötigt sudo):
 
-    Fertig!
-        Das Programm ist jetzt über das Anwendungsmenü startbar.
-        Eine Verknüpfung befindet sich auf deinem Schreibtisch.
+        sudo bash install.sh
+
+      oder explizit:
+
+        sudo bash install.sh --system
+
+    - Nur für den aktuellen Benutzer (kein sudo):
+
+        bash install.sh --user
+
+    - Alternativer Zielpfad:
+
+        sudo bash install.sh --prefix /opt/zaehler
+
+Nach erfolgreicher Installation ist das Programm über das Anwendungsmenü erreichbar; zusätzlich wird
+eine `.desktop`‑Datei im passenden Applications‑Verzeichnis angelegt und eine Desktop‑Verknüpfung erstellt.
 
 Wie das Skript funktioniert – kurze Erläuterung
 Abschnitt	Aufgabe
@@ -72,6 +87,55 @@ Nach der Installation – was tun?
     Falls das Icon nicht angezeigt wird:
         Prüfe, ob die Datei /usr/local/share/icons/hicolor/48x48/apps/zaehlerstaende.png existiert und lesbar ist (ls -l …).
         Starte ggf. deine Desktop‑Session neu oder führe update-desktop-database erneut aus.
+
+Uninstallation
+--------------
+
+Es gibt ein mitgeliefertes `uninstall.sh`‑Skript, das die für `install.sh` angelegten Dateien entfernt.
+
+Beispiele:
+
+```bash
+# Systemweit (sudo):
+sudo bash uninstall.sh
+
+# Nur für aktuellen Benutzer:
+bash uninstall.sh --user
+
+# Vorschau (keine Löschaktion):
+bash uninstall.sh --user --dry-run
+
+# Interaktiv: vor jedem Eintrag fragen
+bash uninstall.sh --system --interactive
+
+# Sofort löschen ohne Nachfrage
+sudo bash uninstall.sh --system --yes
+```
+
+Hinweis: `uninstall.sh` unterstützt die gleichen `--prefix`‑Optionen wie `install.sh`.
+
+Release erstellen
+-----------------
+
+Die Versionsnummer befindet sich in `VERSION`. Zum Erstellen eines Releases kannst du das mitgelieferte
+`release.sh` benutzen. Es commitet `VERSION` (falls nötig), legt ein annotiertes Tag `v<version>` an und pusht
+Commit und Tag zum Remote `origin`.
+
+Beispiel:
+
+```bash
+# Prüfen, was gemacht würde:
+./release.sh --dry-run
+
+# Erstellen und pushen:
+./release.sh
+
+# Erstellen, aber nicht pushen:
+./release.sh --no-push
+```
+
+Hinweis: `release.sh` muss in einem echten Git‑Checkout ausgeführt werden und benötigt Schreib‑/Push‑Rechte für
+das Remote‑Repo.
 
 Fehlerbehebung / FAQ
 Problem	mögliche Ursache	Lösung
