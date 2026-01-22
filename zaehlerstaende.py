@@ -1,27 +1,44 @@
 #!/usr/bin/env python3
 """
 Zählerstände Verwaltung
-Verwaltet Strom‑, Gas‑ und Wasserzählerstände
+Verwaltet Strom-, Gas- und Wasserzählerstände
 """
 
-# ------------------------------------------------------------
-# 0️⃣  Backend‑Erkennung (Wayland / X11) – unverändert
-# ------------------------------------------------------------
-import os, sys, subprocess, json, csv
-from datetime import datetime
-from pathlib import Path
+# ----------------------------------------------------------------------
+#  0️⃣  Vorbereitung: Backend‑Erkennung & ggf. Umschaltung
+# ----------------------------------------------------------------------
+# Wir wollen das Programm sowohl unter Wayland als auch unter X11 starten.
+# GTK wählt standardmäßig das Backend, das vom System angeboten wird.
+# Manchmal (z. B. bei gemischten Remote‑Sessions) kann das falsche Backend
+# gewählt werden und das Fenster lässt sich nicht öffnen.
+# Deshalb:
+#   • Prüfen, welches Backend gerade aktiv ist.
+#   • Falls das aktive Backend nicht funktioniert, das Gegenstück forcieren.
+#   • Das Ganze muss geschehen, **BEVOR** wir `gi.require_version('Gtk', …)` aufrufen,
+#     sonst hat GTK das Backend bereits festgelegt.
+
+import os
+import sys
+import subprocess
 
 def _backend_works(backend: str) -> bool:
-    """Teste, ob ein Mini‑GTK‑Fenster mit dem angegebenen Backend funktioniert."""
+    """
+    Versucht, ein minimal‑GTK‑Fenster mit dem angegebenen Backend zu öffnen.
+    Gibt True zurück, wenn das Öffnen gelingt, sonst False.
+    """
+    # Temporär das gewünschte Backend setzen
     env = os.environ.copy()
     env["GDK_BACKEND"] = backend
+
+    # Wir starten ein kurzes Python‑Snippet in einem Sub‑Process,
+    # das nur ein leeres GTK‑Fenster erzeugt und sofort schließt.
     test_code = (
         "import gi; "
-        "gi.require_version('Gtk', '4.0'); "
+        "gi.require_version('Gtk', '3.0'); "
         "from gi.repository import Gtk; "
         "w = Gtk.Window(); "
         "w.connect('destroy', Gtk.main_quit); "
-        "w.show(); "
+        "w.show_all(); "
         "Gtk.main_quit()"
     )
     try:
@@ -37,21 +54,32 @@ def _backend_works(backend: str) -> bool:
     except Exception:
         return False
 
-# Wähle ein funktionierendes Backend (Wayland bevorzugt)
+
+# 1️⃣ Prüfen, welches Backend das System aktuell anbietet
+# (Wayland ist häufig die Default‑Option, X11 ist immer verfügbar)
+preferred_backend = None
 if _backend_works("wayland"):
-    os.environ["GDK_BACKEND"] = "wayland"
+    preferred_backend = "wayland"
 elif _backend_works("x11"):
-    os.environ["GDK_BACKEND"] = "x11"
+    preferred_backend = "x11"
 else:
+    # Sehr ungewöhnlich – weder Wayland noch X11 funktionieren.
+    # Wir geben eine klare Fehlermeldung aus und beenden das Programm.
     sys.stderr.write(
-        "❌ Weder Wayland noch X11 konnten ein GTK‑Fenster öffnen.\n"
+        "❌ Weder Wayland noch X11 konnten ein GTK‑Fenster öffnen. "
+        "Stelle sicher, dass ein grafischer Server läuft.\n"
     )
     sys.exit(1)
 
-# ------------------------------------------------------------
-# 1️⃣ GTK‑Import (nur GTK 4, Fallback zu GTK 3)
-# ------------------------------------------------------------
+# 2️⃣ Setze das gefundene Backend **für den aktuellen Prozess**
+os.environ["GDK_BACKEND"] = preferred_backend
+
+# ----------------------------------------------------------------------
+#  1️⃣  GTK‑Import – jetzt erst, nachdem das Backend festgelegt ist
+# ----------------------------------------------------------------------
 import gi
+
+# Versuche zuerst GTK 4, fall back zu GTK 3 (wie im vorherigen Patch)
 try:
     gi.require_version('Gtk', '4.0')
     from gi.repository import Gtk, GLib
@@ -61,11 +89,89 @@ except (ImportError, ValueError):
     from gi.repository import Gtk, GLib
     GTK_VERSION = 3
 
-# ------------------------------------------------------------
-# 2️⃣ Hilfs‑Utilities (GTK‑Wrapper)
-# ------------------------------------------------------------
+# ----------------------------------------------------------------------
+#  2️⃣  Rest des Programms (DataManager, UI‑Wrapper, etc.)
+# ----------------------------------------------------------------------
+import json, csv
+from datetime import datetime
+from pathlib import Path
+from typing import Optional
+
+# Pfad der persistierten Konfiguration (XDG‑konform im Home‑Verzeichnis)
+CONFIG_PATH = Path.home() / '.config' / 'zaehlerstaende' / 'config.json'
+
+
+def load_config() -> dict:
+    if CONFIG_PATH.exists():
+        try:
+            with open(CONFIG_PATH, 'r', encoding='utf-8') as f:
+                return json.load(f)
+        except Exception:
+            return {}
+    return {}
+
+
+def save_config(cfg: dict):
+    CONFIG_PATH.parent.mkdir(parents=True, exist_ok=True)
+    with open(CONFIG_PATH, 'w', encoding='utf-8') as f:
+        json.dump(cfg, f, indent=2)
+
+# ------------------- DataManager (unverändert) -----------------------
+class DataManager:
+    """Verwaltet das Speichern und Laden der Daten
+
+    Der Konstruktor akzeptiert `pfad` entweder als Ordner oder als
+    direkter Dateipfad (z. B. /pfad/zu/zaehlerstaende.json). Wenn kein
+    Pfad gesetzt ist, wird ein Standardordner unter
+    `~/.local/share/zaehlerstaende/` verwendet.
+    """
+
+    def __init__(self, datei: str = "zaehlerstaende.json", pfad: Optional[str] = None):
+        if pfad is None:
+            base_dir = Path.home() / ".local" / "share" / "zaehlerstaende"
+            filename = datei
+        else:
+            p = Path(pfad).expanduser()
+            # Falls der Benutzer eine konkrete Datei angibt (z.B. endswith .json),
+            # nutzen wir diese Datei.
+            if p.suffix.lower() == '.json':
+                file_path = p.resolve()
+                base_dir = file_path.parent
+                filename = file_path.name
+            else:
+                base_dir = p.resolve()
+                filename = datei
+        base_dir.mkdir(parents=True, exist_ok=True)
+        self.datei = base_dir / filename
+
+    def laden(self):
+        if self.datei.exists():
+            with open(self.datei, "r", encoding="utf-8") as f:
+                return json.load(f)
+        return []
+
+    def speichern(self, daten):
+        with open(self.datei, "w", encoding="utf-8") as f:
+            json.dump(daten, f, indent=2)
+
+    def export_csv(self, daten, ziel=None):
+        if not ziel:
+            ziel = Path.home() / f"zaehlerstaende_{datetime.now():%Y%m%d_%H%M%S}.csv"
+        with open(ziel, "w", newline="", encoding="utf-8") as f:
+            writer = csv.writer(f, delimiter=";")
+            writer.writerow(['Datum', 'Strom (kWh)', 'Gas (m³)', 'Wasser (m³)'])
+            for e in daten:
+                writer.writerow([
+                    e['datum'],
+                    str(e['strom']).replace('.', ','),
+                    str(e['gas']).replace('.', ','),
+                    str(e['wasser']).replace('.', ',')
+                ])
+        return ziel
+
+# ------------------- GTK‑Hilfswrapper -------------------------------
 def add_child(container, widget):
-    """GTK‑Wrapper: set_child (GTK 4) bzw. add (GTK 3)."""
+    """Wrapper für set_child (GTK 4) bzw. add (GTK 3)."""
     if GTK_VERSION == 4:
         container.set_child(widget)
     else:
@@ -73,7 +179,11 @@ def add_child(container, widget):
 
 def show_dialog(parent, title, message,
                 buttons=("Abbrechen", "Löschen")):
-    """Einheitlicher Bestätigungsdialog (GTK 4 → AlertDialog, GTK 3 → MessageDialog)."""
+    """
+    Einheitlicher Bestätigungsdialog.
+    GTK 4 → Gtk.AlertDialog, GTK 3 → Gtk.MessageDialog.
+    Gibt den Index des gedrückten Buttons zurück.
+    """
     if GTK_VERSION == 4:
         dlg = Gtk.AlertDialog()
         dlg.set_message(title)
@@ -99,110 +209,7 @@ def show_dialog(parent, title, message,
         dlg.destroy()
         return resp
 
-# ------------------------------------------------------------
-# 3️⃣ Pfad‑Logik – fester Speicherort über ENV‑Variable
-# ------------------------------------------------------------
-def _ensure_dir(path: Path) -> None:
-    """
-    Legt das Verzeichnis an (falls nötig) und setzt die Rechte auf 0o700
-    (nur der Eigentümer darf lesen, schreiben, ausführen).
-    """
-    path.mkdir(parents=True, exist_ok=True)
-    try:
-        path.chmod(0o700)
-    except PermissionError:
-        # Falls das chmod fehlschlägt (z. B. weil das FS keine POSIX‑Modi kennt),
-        # ignorieren wir den Fehler – das Programm läuft trotzdem.
-        pass
-
-def _secure_file(path: Path) -> None:
-    """
-    Stellt sicher, dass die Datei existiert und die Rechte 0o600 hat
-    (nur der Eigentümer darf lesen und schreiben).
-    """
-    if not path.exists():
-        # Datei leer anlegen
-        path.touch(exist_ok=True)
-    try:
-        path.chmod(0o600)
-    except PermissionError:
-        pass
-
-def _json_path() -> Path:
-    """
-    Liefert den endgültigen Pfad zur JSON‑Datei.
-    Reihenfolge:
-    1. Umgebungsvariable ZAHLER_PFAD (kann ein Verzeichnis oder ein voller Dateiname sein)
-    2. Fallback: ~/.local/share/zaehlerstaende/zaehlerstaende.json
-    """
-    env_path = os.getenv("ZAHLER_PFAD")
-    if env_path:
-        p = Path(env_path).expanduser().resolve()
-        if p.is_dir():
-            # Verzeichnis angegeben → Datei dort mit Standardnamen
-            _ensure_dir(p)
-            target = p / "zaehlerstaende.json"
-        else:
-            # Voller Dateiname angegeben
-            _ensure_dir(p.parent)
-            target = p
-    else:
-        # Default‑Ort
-        base = Path.home() / ".local" / "share" / "zaehlerstaende"
-        _ensure_dir(base)
-        target = base / "zaehlerstaende.json"
-
-    _secure_file(target)
-    return target
-
-# ------------------------------------------------------------
-# 4️⃣ DataManager – nutzt den sicheren Pfad
-# ------------------------------------------------------------
-class DataManager:
-    """Verwaltet das Laden und Speichern der Zählerstände."""
-
-    def __init__(self):
-        self.datei = _json_path()          # <-- immer der sichere Pfad
-
-    # ------------------- Laden / Speichern -------------------
-    def laden(self):
-        if self.datei.exists():
-            with open(self.datei, "r", encoding="utf-8") as f:
-                return json.load(f)
-        return []
-
-    def speichern(self, daten):
-        # Schreibe atomar → erst in temporäre Datei, dann umbenennen
-        tmp_path = self.datei.with_suffix(".tmp")
-        with open(tmp_path, "w", encoding="utf-8") as f:
-            json.dump(daten, f, indent=2)
-        # Setze korrekte Rechte auf die temporäre Datei
-        try:
-            tmp_path.chmod(0o600)
-        except PermissionError:
-            pass
-        # Atomarer Ersatz
-        tmp_path.replace(self.datei)
-
-    # ------------------- CSV‑Export -------------------
-    def export_csv(self, daten, ziel=None):
-        if not ziel:
-            ziel = Path.home() / f"zaehlerstaende_{datetime.now():%Y%m%d_%H%M%S}.csv"
-        with open(ziel, "w", newline="", encoding="utf-8") as f:
-            writer = csv.writer(f, delimiter=";")
-            writer.writerow(['Datum', 'Strom (kWh)', 'Gas (m³)', 'Wasser (m³)'])
-            for e in daten:
-                writer.writerow([
-                    e['datum'],
-                    str(e['strom']).replace('.', ','),
-                    str(e['gas']).replace('.', ','),
-                    str(e['wasser']).replace('.', ',')
-                ])
-        return ziel
-
-# ------------------------------------------------------------
-# 5️⃣ UI‑Komponenten (unverändert)
-# ------------------------------------------------------------
+# ------------------- EingabeWidget (unverändert) -------------------
 class EingabeWidget(Gtk.Box):
     """Widget für die Eingabe von Zählerständen"""
 
@@ -251,32 +258,51 @@ class EingabeWidget(Gtk.Box):
         self.gas_entry.set_text("")
         self.wasser_entry.set_text("")
 
-# ------------------------------------------------------------
-# 6️⃣ Hauptfenster (unverändert, nur DataManager‑Aufruf bleibt gleich)
-# ------------------------------------------------------------
+# ------------------- Hauptfenster -------------------------------
 class ZaehlerstandApp(Gtk.ApplicationWindow):
     """Hauptfenster der Anwendung"""
 
-    def __init__(self, app):
+    def __init__(self, app, datenpfad=None):
         super().__init__(application=app, title="Zählerstände Verwaltung")
         self.set_default_size(600, 500)
 
-        # DataManager nutzt jetzt immer den sicheren Pfad
-        self.data_manager = DataManager()
+        self.data_manager = DataManager(pfad=datenpfad)
         self.daten = self.data_manager.laden()
         self._erstelle_ui()
         self.aktualisiere_liste()
 
-    # ------------------- UI‑Aufbau -------------------
+    # UI‑Aufbau ----------------------------------------------------
     def _erstelle_ui(self):
         main_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=10)
         for side in ("top", "bottom", "start", "end"):
             getattr(main_box, f"set_margin_{side}")(20)
 
-        # Titel
+        # Titel + Einstellungen
+        top_row = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=10)
         titel = Gtk.Label(label="<big><b>Zählerstände erfassen</b></big>")
         titel.set_use_markup(True)
-        main_box.append(titel)
+        top_row.append(titel)
+        settings_btn = Gtk.Button(label="Einstellungen")
+        settings_btn.connect("clicked", self.open_settings)
+        top_row.append(settings_btn)
+        create_btn = Gtk.Button(label="Neue Datei erstellen")
+        create_btn.connect("clicked", self.create_new_file)
+        top_row.append(create_btn)
+        main_box.append(top_row)
+
+        # Anzeige des aktuell verwendeten Datenpfads
+        full_path = str(self.data_manager.datei)
+        self.current_path_label = Gtk.Label(label=f"Pfad: {full_path}")
+        try:
+            self.current_path_label.set_xalign(0)
+        except Exception:
+            pass
+        try:
+            # Tooltip mit vollem Pfad (falls Label abgeschnitten ist)
+            self.current_path_label.set_tooltip_text(full_path)
+        except Exception:
+            pass
+        main_box.append(self.current_path_label)
 
         # Eingabebereich
         eingabe_frame = Gtk.Frame()
@@ -294,7 +320,7 @@ class ZaehlerstandApp(Gtk.ApplicationWindow):
         self.status_label = Gtk.Label(label="")
         main_box.append(self.status_label)
 
-        # Liste
+        # Liste der Einträge
         liste_frame = Gtk.Frame()
         liste_frame.set_label("Gespeicherte Ablesungen")
         scrolled = Gtk.ScrolledWindow()
@@ -305,6 +331,7 @@ class ZaehlerstandApp(Gtk.ApplicationWindow):
         for side in ("top", "bottom", "start", "end"):
             getattr(self.liste_box, f"set_margin_{side}")(10)
 
+        # Unterschiedliche API für das Einbetten des ScrolledWindow
         if GTK_VERSION == 4:
             scrolled.set_child(self.liste_box)
             liste_frame.set_child(scrolled)
@@ -328,7 +355,7 @@ class ZaehlerstandApp(Gtk.ApplicationWindow):
 
         add_child(self, main_box)
 
-    # ------------------- Logik -------------------
+    # Logik ---------------------------------------------------------
     def speichern_clicked(self, button):
         daten = self.eingabe_widget.get_daten()
         if not all(daten.values()):
@@ -389,35 +416,129 @@ class ZaehlerstandApp(Gtk.ApplicationWindow):
     def zeige_status(self, text, farbe):
         self.status_label.set_markup(f"<span color='{farbe}'>{text}</span>")
 
-# ------------------------------------------------------------
-# 7️⃣ Application‑Klasse (keine Pfad‑Parameter mehr)
-# ------------------------------------------------------------
-class ZaehlerstandeAnwendung(Gtk.Application):
-    """GTK‑Application – keine externen Pfad‑Parameter."""
+    def open_settings(self, button):
+        # Datei auswählen (direkte .json‑Datei)
+        action = Gtk.FileChooserAction.OPEN
+        dlg = Gtk.FileChooserDialog(
+            title="Zählerstände‑Datei wählen",
+            transient_for=self,
+            flags=0,
+            action=action,
+        )
+        dlg.add_button("Abbrechen", Gtk.ResponseType.CANCEL)
+        dlg.add_button("Auswählen", Gtk.ResponseType.OK)
 
-    def __init__(self):
+        # Filter für JSON‑Dateien
+        try:
+            filt = Gtk.FileFilter()
+            filt.set_name("JSON Dateien")
+            filt.add_pattern("*.json")
+            dlg.add_filter(filt)
+        except Exception:
+            pass
+
+        resp = dlg.run()
+        if resp == Gtk.ResponseType.OK:
+            ausgew = dlg.get_filename()
+            if ausgew:
+                # Setze neue Datei als Datenquelle, lade Daten neu und speichere Config
+                self.data_manager = DataManager(pfad=ausgew)
+                self.daten = self.data_manager.laden()
+                save_config({'datenpfad': ausgew})
+                # Pfad‑Anzeige aktualisieren
+                try:
+                    self.current_path_label.set_text(f"Pfad: {self.data_manager.datei}")
+                    self.current_path_label.set_tooltip_text(str(self.data_manager.datei))
+                except Exception:
+                    pass
+                self.aktualisiere_liste()
+                self.zeige_status(f"Datei gesetzt: {ausgew}", "green")
+        dlg.destroy()
+
+    def create_new_file(self, button):
+        # Datei speichern (Save dialog) zur Anlage einer neuen leeren JSON
+        action = Gtk.FileChooserAction.SAVE
+        dlg = Gtk.FileChooserDialog(
+            title="Neue Zählerstände‑Datei erstellen",
+            transient_for=self,
+            flags=0,
+            action=action,
+        )
+        dlg.add_button("Abbrechen", Gtk.ResponseType.CANCEL)
+        dlg.add_button("Erstellen", Gtk.ResponseType.OK)
+        try:
+            dlg.set_current_name("zaehlerstaende.json")
+        except Exception:
+            pass
+        try:
+            filt = Gtk.FileFilter()
+            filt.set_name("JSON Dateien")
+            filt.add_pattern("*.json")
+            dlg.add_filter(filt)
+        except Exception:
+            pass
+
+        resp = dlg.run()
+        if resp == Gtk.ResponseType.OK:
+            ausgew = dlg.get_filename()
+            if ausgew:
+                p = Path(ausgew)
+                p.parent.mkdir(parents=True, exist_ok=True)
+                if p.exists():
+                    # Bestätigungsdialog, falls Datei schon existiert
+                    idx = show_dialog(
+                        parent=self,
+                        title="Datei existiert bereits",
+                        message=f"Die Datei {p} existiert bereits. Überschreiben?",
+                        buttons=["Abbrechen", "Überschreiben"],
+                    )
+                    if idx != 1:
+                        self.zeige_status("Erstellung abgebrochen", "red")
+                        dlg.destroy()
+                        return
+                # (Anlegen/Überschreiben)
+                with open(p, 'w', encoding='utf-8') as f:
+                    f.write('[]')
+                # Setze diese Datei als Datenquelle
+                self.data_manager = DataManager(pfad=str(p))
+                self.daten = self.data_manager.laden()
+                save_config({'datenpfad': str(p)})
+                try:
+                    self.current_path_label.set_text(f"Pfad: {self.data_manager.datei}")
+                    self.current_path_label.set_tooltip_text(str(self.data_manager.datei))
+                except Exception:
+                    pass
+                self.aktualisiere_liste()
+                self.zeige_status(f"Datei erstellt: {p}", "green")
+        dlg.destroy()
+
+# ------------------- Application-Klasse ---------------------------
+class ZaehlerstandeAnwendung(Gtk.Application):
+    """GTK‑Application – übernimmt optionalen Daten‑Pfad"""
+
+    def __init__(self, datenpfad=None):
         super().__init__(application_id='de.beispiel.zaehlerstaende')
+        self.datenpfad = datenpfad
 
     def do_activate(self):
-        win = ZaehlerstandApp(self)
+        win = ZaehlerstandApp(self, datenpfad=self.datenpfad)
         win.present()
 
-# ------------------------------------------------------------
-# 8️⃣ Einstiegspunkt / Helper‑Funktion
-# ------------------------------------------------------------
-def run_app():
-    """
-    Starte die Anwendung.
-    Optional kannst du die Umgebungsvariable ZAHLER_PFAD setzen,
-    bevor du das Skript startest, um einen anderen Speicherort zu wählen:
-
-        ZAHLER_PFAD=/mein/pfad/zaehler.json python3 app.py
-    """
-    app = ZaehlerstandeAnwendung()
-    return app.run(None)   # None = keine argv‑Übergabe
-
+# ------------------- Einstiegspunkt -------------------------------
 def main():
-    run_app()
+    """
+    Haupteinstiegspunkt.
+    Hier kannst du den Zielordner für die JSON‑Datei festlegen,
+    z. B. über eine Umgebungsvariable, ein CLI‑Argument o. ä.
+    """
+    # CLI‑Argument hat Vorrang, dann gespeicherte Config, sonst Standard
+    cli_path = None
+    if len(sys.argv) > 1:
+        cli_path = sys.argv[1]
+    cfg = load_config()
+    benutzer_pfad = cli_path or cfg.get('datenpfad') or None
+    app = ZaehlerstandeAnwendung(datenpfad=benutzer_pfad)
+    return app.run()
 
 if __name__ == '__main__':
     main()
