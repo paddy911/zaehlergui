@@ -166,16 +166,42 @@ cat > "$STARTER" <<'STARTER_EOF'
 # GTK3/GTK4 & Wayland/X11 kompatibel
 
 # Ermittle das Installationsverzeichnis
-if command -v xdg-user-dir &>/dev/null; then
+# Versuche mehrere Pfade nacheinander
+DATADIR=""
+
+# 1. Versuche ~/.local/share/zaehlerstaende (Benutzer-Installation)
+if [[ -f "$HOME/.local/share/zaehlerstaende/__main__.py" ]]; then
     DATADIR="$HOME/.local/share/zaehlerstaende"
-elif [[ -d "/usr/local/share/zaehlerstaende" ]]; then
+# 2. Versuche /usr/local/share/zaehlerstaende (System-Installation)
+elif [[ -f "/usr/local/share/zaehlerstaende/__main__.py" ]]; then
     DATADIR="/usr/local/share/zaehlerstaende"
-else
+# 3. Versuche /usr/share/zaehlerstaende (Alternative System-Installation)
+elif [[ -f "/usr/share/zaehlerstaende/__main__.py" ]]; then
+    DATADIR="/usr/share/zaehlerstaende"
+# 4. Versuche relativ zum Starter-Skript (Entwicklung)
+elif [[ -f "$(cd "$(dirname "${BASH_SOURCE[0]}")/../share/zaehlerstaende" 2>/dev/null && pwd)/__main__.py" ]]; then
     DATADIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/../share/zaehlerstaende" && pwd)"
 fi
 
-if [[ ! -f "$DATADIR/__main__.py" ]]; then
-    echo "❌ Zählerstände-Installationsdateien nicht gefunden in $DATADIR"
+# Wenn noch nichts gefunden, versuche xdg-user-dir
+if [[ -z "$DATADIR" ]] && command -v xdg-user-dir &>/dev/null; then
+    DATA_HOME=$(xdg-user-dir DATA)
+    if [[ -f "$DATA_HOME/zaehlerstaende/__main__.py" ]]; then
+        DATADIR="$DATA_HOME/zaehlerstaende"
+    fi
+fi
+
+# Fehlerbehandlung
+if [[ -z "$DATADIR" ]] || [[ ! -f "$DATADIR/__main__.py" ]]; then
+    echo "❌ Zählerstände-Installationsdateien nicht gefunden."
+    echo
+    echo "Mögliche Lösungen:"
+    echo "  1. Installation überprüfen: ./install.sh --user"
+    echo "  2. Prüfe folgende Pfade:"
+    echo "     - $HOME/.local/share/zaehlerstaende"
+    echo "     - /usr/local/share/zaehlerstaende"
+    echo "     - /usr/share/zaehlerstaende"
+    echo
     exit 1
 fi
 
