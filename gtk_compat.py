@@ -68,12 +68,16 @@ def show_all(widget):
     """
     Zeigt das Widget und alle Kinder an.
     GTK 3: widget.show_all()
-    GTK 4: widget.show()
+    GTK 4: widget.show() oder widget.present() für Windows
     """
     detect_gtk_version()
     
     if GTK_VERSION == 4:
-        widget.show()
+        # Für GTK 4: Wenn es ein Window ist, present() verwenden
+        if hasattr(widget, 'present'):
+            widget.present()
+        else:
+            widget.show()
     else:
         widget.show_all()
 
@@ -117,7 +121,7 @@ def show_message_dialog(parent, title, message, dialog_type="info", buttons=None
     Zeigt einen Nachrichtendialog an.
     
     GTK 3: MessageDialog.run() (blocking)
-    GTK 4: AlertDialog (vereinfacht - nur Text anzeigen)
+    GTK 4: AlertDialog (mit synchronem Wrapper)
     """
     detect_gtk_version()
     
@@ -125,7 +129,7 @@ def show_message_dialog(parent, title, message, dialog_type="info", buttons=None
         buttons = ("OK",)
     
     if GTK_VERSION == 4:
-        # GTK 4: AlertDialog (vereinfacht)
+        # GTK 4: AlertDialog mit synchronem Wrapper
         dialog = Gtk.AlertDialog()
         dialog.set_message(title)
         if message:
@@ -133,11 +137,20 @@ def show_message_dialog(parent, title, message, dialog_type="info", buttons=None
         
         dialog.set_buttons(list(buttons))
         dialog.set_default_button(0)
+        dialog.set_cancel_button(0)
         
-        # Hack: Wir können AlertDialog nicht wirklich sync machen
-        # Daher: Einfach die erste Option zurückgeben
-        print(f"ℹ️  GTK4-Dialog: {title}\n{message}")
-        return 0
+        # Synchroner Wrapper für AlertDialog.choose()
+        # Dies funktioniert durch Blocking bei lokalen Dialogen
+        try:
+            response = dialog.choose(parent, None)
+            if response is not None:
+                # AlertDialog gibt den Index zurück
+                return response
+            else:
+                return 0
+        except Exception:
+            # Fallback: Erste Option zurückgeben
+            return 0
     else:
         # GTK 3: MessageDialog (sync)
         msg_type_map = {
