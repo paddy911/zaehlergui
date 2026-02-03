@@ -129,33 +129,40 @@ mkdir -p "$STARTER_DIR"
 success "Verzeichnisse erstellt"
 
 # ===== Python-Dateien kopieren =====
-echo "📋 Kopiere Python-Module..."
+echo "📋 Kopiere Python-Module und Ressourcen..."
 
-# Kopiere alle Python-Dateien (ohne .git, __pycache__, etc.)
-for file in "$SCRIPT_DIR"/*.py; do
-    if [[ -f "$file" ]]; then
-        cp "$file" "$PREFIX_DIR/"
-    fi
+# Robustere Kopierlogik: handle nullglob, mehrere Dateien gleichzeitig kopieren
+shopt -s nullglob
+py_files=("$SCRIPT_DIR"/*.py)
+if [ ${#py_files[@]} -gt 0 ]; then
+    cp -v "${py_files[@]}" "$PREFIX_DIR/" || error "Fehler beim Kopieren der Python-Dateien nach $PREFIX_DIR"
+else
+    warn "Keine Python-Dateien (*.py) im Verzeichnis $SCRIPT_DIR gefunden"
+fi
+
+# Dokumentation (md, txt)
+doc_files=()
+for ext in md txt; do
+    for f in "$SCRIPT_DIR"/*."$ext"; do
+        doc_files+=("$f")
+    done
 done
+if [ ${#doc_files[@]} -gt 0 ]; then
+    cp -v "${doc_files[@]}" "$PREFIX_DIR/" 2>/dev/null || true
+fi
 
-# Kopiere Dokumentation
-for file in "$SCRIPT_DIR"/*.md "$SCRIPT_DIR"/*.txt; do
-    if [[ -f "$file" ]]; then
-        cp "$file" "$PREFIX_DIR/" 2>/dev/null || true
-    fi
-done
-
-# Kopiere data-Verzeichnis wenn vorhanden
+# data-Verzeichnis
 if [[ -d "$SCRIPT_DIR/data" ]]; then
-    cp -r "$SCRIPT_DIR/data" "$PREFIX_DIR/"
+    cp -rv "$SCRIPT_DIR/data" "$PREFIX_DIR/" || warn "Fehler beim Kopieren des data-Verzeichnisses"
 fi
 
-# Kopiere VERSION
+# VERSION
 if [[ -f "$SCRIPT_DIR/VERSION" ]]; then
-    cp "$SCRIPT_DIR/VERSION" "$PREFIX_DIR/"
+    cp -v "$SCRIPT_DIR/VERSION" "$PREFIX_DIR/" || warn "Fehler beim Kopieren der VERSION"
 fi
 
-success "Python-Module kopiert"
+shopt -u nullglob
+success "Dateien kopiert nach $PREFIX_DIR"
 
 # ===== Starter-Skript =====
 echo "🚀 Erstelle Starter-Skript..."
