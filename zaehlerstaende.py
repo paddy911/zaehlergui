@@ -205,9 +205,10 @@ class EingabeWidget(Gtk.Box):
     def _erstelle_eingabe(self, label_text, text="", placeholder=""):
         box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=10)
         label = Gtk.Label(label=label_text)
-        label.set_size_request(100, 0)
+        label.set_size_request(100, -1)
         label.set_xalign(0)
         entry = Gtk.Entry()
+        entry.set_hexpand(True)  # Verhinderung von Rendering-Problemen
         if text:
             entry.set_text(text)
         if placeholder:

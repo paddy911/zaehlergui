@@ -32,10 +32,11 @@ class SettingsWindow(Gtk.Window):
         # Eingabe‑Feld für Pfad
         path_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=10)
         path_label = Gtk.Label(label="Dateipfad:")
-        path_label.set_size_request(120, 0)
+        path_label.set_size_request(120, -1)
         path_label.set_xalign(0)
         
         self.path_entry = Gtk.Entry()
+        self.path_entry.set_hexpand(True)  # Verhinderung von Rendering-Problemen
         self.path_entry.set_text(current_path)
         self.path_entry.set_editable(True)
         add_child(path_box, path_label)
