@@ -70,7 +70,7 @@ done
 
 # Bestimme Installationspfade basierend auf MODE
 if [[ "$MODE" == "user" ]]; then
-    PREFIX_DIR="${PREFIX_OVERRIDE:-$HOME/.local/share/zaehlerstaende}"
+    PREFIX_DIR="${PREFIX_OVERRIDE:-$HOME/share/zaehlerstaende}"
     STARTER_DIR="$HOME/.local/bin"
     ICON_BASE="$HOME/.local/share/icons/hicolor"
     DESKTOP_DIR="$HOME/.local/share/applications"

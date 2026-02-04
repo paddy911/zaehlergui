@@ -101,7 +101,7 @@ BEISPIELE:
     sudo $0 --system
 
     # Mit custom Prefix
-    $0 --user --prefix ~/.local/share/zaehlerstaende
+    $0 --user --prefix ~/share/zaehlerstaende
 
 USAGE
     exit 1
@@ -135,7 +135,7 @@ fi
 
 # ===== Installationspfade festlegen =====
 if [[ "$INSTALL_MODE" == "user" ]]; then
-    PREFIX_DIR="${PREFIX_OVERRIDE:-$HOME/.local/share/zaehlerstaende}"
+    PREFIX_DIR="${PREFIX_OVERRIDE:-$HOME/share/zaehlerstaende}"
     STARTER_DIR="$HOME/.local/bin"
     ICON_BASE="$HOME/.local/share/icons/hicolor"
     DESKTOP_DIR="$HOME/.local/share/applications"
@@ -245,9 +245,9 @@ cat > "$STARTER" <<'STARTER_EOF'
 # Versuche mehrere Pfade nacheinander
 DATADIR=""
 
-# 1. Versuche ~/.local/share/zaehlerstaende (Benutzer-Installation)
-if [[ -f "$HOME/.local/share/zaehlerstaende/__main__.py" ]]; then
-    DATADIR="$HOME/.local/share/zaehlerstaende"
+# 1. Versuche ~/share/zaehlerstaende (Benutzer-Installation)
+if [[ -f "$HOME/share/zaehlerstaende/__main__.py" ]]; then
+    DATADIR="$HOME/share/zaehlerstaende"
 # 2. Versuche /usr/local/share/zaehlerstaende (System-Installation)
 elif [[ -f "/usr/local/share/zaehlerstaende/__main__.py" ]]; then
     DATADIR="/usr/local/share/zaehlerstaende"
@@ -274,7 +274,7 @@ if [[ -z "$DATADIR" ]] || [[ ! -f "$DATADIR/__main__.py" ]]; then
     echo "Mögliche Lösungen:"
     echo "  1. Installation überprüfen: ./install.sh --user"
     echo "  2. Prüfe folgende Pfade:"
-    echo "     - \$HOME/.local/share/zaehlerstaende"
+    echo "     - \$HOME/share/zaehlerstaende"
     echo "     - /usr/local/share/zaehlerstaende"
     echo "     - /usr/share/zaehlerstaende"
     echo
