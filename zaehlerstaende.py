@@ -205,7 +205,7 @@ class EingabeWidget(Gtk.Box):
     def _erstelle_eingabe(self, label_text, text="", placeholder=""):
         box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=10)
         label = Gtk.Label(label=label_text)
-        label.set_size_request(100, -1)
+        label.set_size_request(100, 0)
         label.set_xalign(0)
         entry = Gtk.Entry()
         if text:
@@ -255,7 +255,7 @@ class SettingsWindow(Gtk.Window):
         # Eingabe‑Feld für Pfad
         path_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=10)
         path_label = Gtk.Label(label="Dateipfad:")
-        path_label.set_size_request(120, -1)
+        path_label.set_size_request(120, 0)
         path_label.set_xalign(0)
         
         self.path_entry = Gtk.Entry()
