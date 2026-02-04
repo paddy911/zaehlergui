@@ -217,7 +217,6 @@ class ZaehlerstandApp(Gtk.ApplicationWindow):
         """Öffnet das Settings-Fenster"""
         current_path = str(self.data_manager.datei)
         settings_win = SettingsWindow(self, current_path, self.apply_settings)
-        show_all(settings_win)
 
     def apply_settings(self, new_path):
         """Wendet neue Pfad-Einstellungen an"""

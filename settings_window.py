@@ -23,6 +23,8 @@ class SettingsWindow(Gtk.Window):
         main_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=15)
         for side in ("top", "bottom", "start", "end"):
             getattr(main_box, f"set_margin_{side}")(20)
+        
+        add_child(self, main_box)
 
         # Titel
         titel = Gtk.Label(label="<b>Datenpfad-Einstellungen</b>")
@@ -64,7 +66,8 @@ class SettingsWindow(Gtk.Window):
         add_child(button_box, apply_btn)
         
         add_child(main_box, button_box)
-        add_child(self, main_box)
+        
+        show_all(self)
 
     def on_browse(self, button):
         """Öffnet einen Datei-Auswahl-Dialog"""
