@@ -15,6 +15,35 @@ warn() { echo "⚠️  $*" >&2; }
 error() { echo "❌ $*" >&2; exit 1; }
 success() { echo "✅ $*"; }
 
+# ===== Überprüfe erforderliche Dateien vor Installation =====
+check_source_files() {
+    echo "🔍 Überprüfe erforderliche Quelldateien..."
+    
+    local REQUIRED_FILES=(
+        "__main__.py"
+        "gtk_compat.py"
+        "data_manager.py"
+        "main_window.py"
+        "settings_window.py"
+    )
+    
+    local MISSING_FILES=0
+    for file in "${REQUIRED_FILES[@]}"; do
+        if [[ -f "$SCRIPT_DIR/$file" ]]; then
+            echo "   ✓ $file"
+        else
+            echo "   ✗ $file FEHLT!"
+            ((MISSING_FILES++))
+        fi
+    done
+    
+    if [[ $MISSING_FILES -gt 0 ]]; then
+        error "Es fehlen $MISSING_FILES erforderliche Datei(en) im Quellverzeichnis $SCRIPT_DIR"
+    fi
+    
+    success "Alle erforderlichen Dateien vorhanden"
+}
+
 # ===== Abhängigkeits-Check =====
 check_dependencies() {
     echo "🔍 Überprüfe Abhängigkeiten..."
@@ -94,6 +123,10 @@ while [[ "$#" -gt 0 ]]; do
     esac
 done
 
+# ===== Überprüfe Quelldateien ZUERST =====
+check_source_files
+echo
+
 # ===== Abhängigkeits-Check =====
 if [[ "$SKIP_DEPS" != true ]]; then
     check_dependencies
@@ -131,38 +164,74 @@ success "Verzeichnisse erstellt"
 # ===== Python-Dateien kopieren =====
 echo "📋 Kopiere Python-Module und Ressourcen..."
 
-# Robustere Kopierlogik: handle nullglob, mehrere Dateien gleichzeitig kopieren
+# Liste der erforderlichen Python-Dateien
+REQUIRED_FILES=(
+    "__main__.py"
+    "gtk_compat.py"
+    "data_manager.py"
+    "main_window.py"
+    "settings_window.py"
+)
+
+# Überprüfe, ob alle erforderlichen Dateien existieren
+echo "  ✓ Überprüfe erforderliche Dateien..."
+for file in "${REQUIRED_FILES[@]}"; do
+    if [[ ! -f "$SCRIPT_DIR/$file" ]]; then
+        error "Erforderliche Datei fehlt: $SCRIPT_DIR/$file"
+    fi
+    echo "    ✓ $file vorhanden"
+done
+
+# Kopiere alle erforderlichen Python-Dateien
+for file in "${REQUIRED_FILES[@]}"; do
+    cp -v "$SCRIPT_DIR/$file" "$PREFIX_DIR/" || error "Fehler beim Kopieren von $file"
+done
+echo "  ✓ Alle Python-Module kopiert"
+
+# Kopiere optionale Python-Dateien
 shopt -s nullglob
-py_files=("$SCRIPT_DIR"/*.py)
-if [ ${#py_files[@]} -gt 0 ]; then
-    cp -v "${py_files[@]}" "$PREFIX_DIR/" || error "Fehler beim Kopieren der Python-Dateien nach $PREFIX_DIR"
-else
-    warn "Keine Python-Dateien (*.py) im Verzeichnis $SCRIPT_DIR gefunden"
-fi
+optional_py=("$SCRIPT_DIR"/*.py)
+shopt -u nullglob
+for file in "${optional_py[@]}"; do
+    base=$(basename "$file")
+    # Überspringe bereits kopierte Dateien
+    if [[ ! " ${REQUIRED_FILES[@]} " =~ " ${base} " ]]; then
+        cp -v "$file" "$PREFIX_DIR/" 2>/dev/null || true
+    fi
+done
 
 # Dokumentation (md, txt)
-doc_files=()
-for ext in md txt; do
-    for f in "$SCRIPT_DIR"/*."$ext"; do
-        doc_files+=("$f")
-    done
-done
+echo "  ✓ Kopiere Dokumentation..."
+shopt -s nullglob
+doc_files=("$SCRIPT_DIR"/*.md "$SCRIPT_DIR"/*.txt)
+shopt -u nullglob
 if [ ${#doc_files[@]} -gt 0 ]; then
-    cp -v "${doc_files[@]}" "$PREFIX_DIR/" 2>/dev/null || true
+    for file in "${doc_files[@]}"; do
+        cp -v "$file" "$PREFIX_DIR/" 2>/dev/null || true
+    done
 fi
 
 # data-Verzeichnis
 if [[ -d "$SCRIPT_DIR/data" ]]; then
+    echo "  ✓ Kopiere Daten-Verzeichnis..."
     cp -rv "$SCRIPT_DIR/data" "$PREFIX_DIR/" || warn "Fehler beim Kopieren des data-Verzeichnisses"
 fi
 
 # VERSION
 if [[ -f "$SCRIPT_DIR/VERSION" ]]; then
+    echo "  ✓ Kopiere VERSION..."
     cp -v "$SCRIPT_DIR/VERSION" "$PREFIX_DIR/" || warn "Fehler beim Kopieren der VERSION"
 fi
 
-shopt -u nullglob
-success "Dateien kopiert nach $PREFIX_DIR"
+# ===== Validierung nach dem Kopieren =====
+echo "  ✓ Validiere Installation..."
+for file in "${REQUIRED_FILES[@]}"; do
+    if [[ ! -f "$PREFIX_DIR/$file" ]]; then
+        error "Validierung fehlgeschlagen: $PREFIX_DIR/$file existiert nicht!"
+    fi
+done
+
+success "Alle Dateien erfolgreich kopiert nach $PREFIX_DIR"
 
 # ===== Starter-Skript =====
 echo "🚀 Erstelle Starter-Skript..."
@@ -205,9 +274,16 @@ if [[ -z "$DATADIR" ]] || [[ ! -f "$DATADIR/__main__.py" ]]; then
     echo "Mögliche Lösungen:"
     echo "  1. Installation überprüfen: ./install.sh --user"
     echo "  2. Prüfe folgende Pfade:"
-    echo "     - $HOME/.local/share/zaehlerstaende"
+    echo "     - \$HOME/.local/share/zaehlerstaende"
     echo "     - /usr/local/share/zaehlerstaende"
     echo "     - /usr/share/zaehlerstaende"
+    echo
+    echo "Fehlende Module:"
+    for mod in __main__.py gtk_compat.py data_manager.py main_window.py settings_window.py; do
+        if [[ ! -f "$DATADIR/$mod" ]]; then
+            echo "  ✗ $mod"
+        fi
+    done
     echo
     exit 1
 fi
@@ -254,6 +330,43 @@ DESKTOP_EOF
 chmod 644 "$DESKTOP_FILE"
 success "Desktop-Eintrag erstellt: $DESKTOP_FILE"
 
+# ===== Validierung der Installation =====
+echo ""
+echo "🔍 Validiere Installation..."
+VALIDATION_FAILED=0
+
+# Überprüfe erforderliche Python-Dateien
+REQUIRED_PY=("__main__.py" "gtk_compat.py" "data_manager.py" "main_window.py" "settings_window.py")
+for pyfile in "${REQUIRED_PY[@]}"; do
+    if [[ -f "$PREFIX_DIR/$pyfile" ]]; then
+        echo "  ✅ $pyfile"
+    else
+        echo "  ❌ $pyfile FEHLT!"
+        VALIDATION_FAILED=1
+    fi
+done
+
+# Überprüfe Starter-Skript
+if [[ -x "$STARTER" ]]; then
+    echo "  ✅ Starter-Skript ausführbar"
+else
+    echo "  ❌ Starter-Skript nicht ausführbar!"
+    VALIDATION_FAILED=1
+fi
+
+# Überprüfe Desktop-Datei
+if [[ -f "$DESKTOP_FILE" ]]; then
+    echo "  ✅ Desktop-Eintrag vorhanden"
+else
+    echo "  ❌ Desktop-Eintrag fehlt!"
+    VALIDATION_FAILED=1
+fi
+
+if [[ $VALIDATION_FAILED -eq 1 ]]; then
+    echo ""
+    error "❌ Validierung fehlgeschlagen! Nicht alle Dateien wurden korrekt installiert."
+fi
+
 # ===== Desktop-Verknüpfung =====
 if cmd_exists xdg-user-dir; then
     DESKTOP_DIR_USER=$(xdg-user-dir DESKTOP)
@@ -280,18 +393,28 @@ echo "════════════════════════�
 echo "✅ INSTALLATION ERFOLGREICH!"
 echo "════════════════════════════════════════════════════════════════"
 echo
-echo "Zu starten mit:"
-echo "  zaehlerstaende"
+echo "📁 Installationsort:"
+echo "   $PREFIX_DIR"
 echo
-echo "Oder direkt:"
-echo "  python3 $PREFIX_DIR/__main__.py"
+echo "🚀 Zu starten mit:"
+echo "   zaehlerstaende"
 echo
-echo "Features:"
-echo "  ✓ GTK 3 & GTK 4 kompatibel"
-echo "  ✓ Wayland & X11 kompatibel"
-echo "  ✓ Automatische Backend-Erkennung"
+echo "   Oder direkt:"
+echo "   python3 $PREFIX_DIR/__main__.py"
 echo
-echo "Weitere Dokumentation:"
-echo "  $PREFIX_DIR/QUICKSTART.md"
-echo "  $PREFIX_DIR/GTK_COMPATIBILITY.md"
+echo "📝 Installierte Module:"
+for pyfile in "${REQUIRED_PY[@]}"; do
+    echo "   ✓ $PREFIX_DIR/$pyfile"
+done
+echo
+echo "✨ Features:"
+echo "   ✓ GTK 3 & GTK 4 kompatibel"
+echo "   ✓ Wayland & X11 kompatibel"
+echo "   ✓ Automatische Backend-Erkennung"
+echo
+echo "📖 Dokumentation:"
+[[ -f "$PREFIX_DIR/QUICKSTART.md" ]] && echo "   • $PREFIX_DIR/QUICKSTART.md"
+[[ -f "$PREFIX_DIR/GTK_COMPATIBILITY.md" ]] && echo "   • $PREFIX_DIR/GTK_COMPATIBILITY.md"
+[[ -f "$PREFIX_DIR/README.md" ]] && echo "   • $PREFIX_DIR/README.md"
+echo
 echo "════════════════════════════════════════════════════════════════"
