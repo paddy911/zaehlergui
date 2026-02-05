@@ -1,155 +1,122 @@
-📄 README – Installation & Desktop‑Verknüpfung für Zählerstände
+📓 Zählerstände Verwaltung – README
+Überblick
 
-Dieses Repository enthält ein Bash‑Installations‑Script (`install.sh`), das das gesamte Programmverzeichnis
-an einen Zielort installiert, ein Starter‑Skript in den PATH legt und eine Desktop‑Verknüpfung anlegt.
-
-Wichtig: Das Skript unterstützt zwei Modi:
-
-- `--system` (Standard): systemweite Installation nach `/usr/local/share/zaehlerstaende` und Starter in `/usr/local/bin`.
-- `--user`: Benutzerlokale Installation nach `~/.local/share/zaehlerstaende` und Starter in `~/.local/bin` (kein sudo erforderlich).
-
-Optional kann mit `--prefix DIR` ein alternatives Zielverzeichnis angegeben werden.
-
-Inhaltsverzeichnis
-
-    1.Voraussetzungen
-    2. Dateistruktur im Repo
-    3. Installations‑Schritte (einmalig)
-    4. Das komplette Installations‑Script
-    5. Wie das Skript funktioniert – kurze Erläuterung
-    6. Nach der Installation – was tun?
-    7. Fehlerbehebung / FAQ
-    8. Lizenz & Hinweis
+Dieses Repository enthält ein komplettes GTK‑basierendes Desktop‑Tool zur Erfassung, Verwaltung und Auswertung von Strom‑, Gas‑ und Wasser‑Zählerständen.
+Die Anwendung unterstützt sowohl GTK 3 als auch GTK 4 und läuft unter Wayland und X11.
 
 Voraussetzungen
-Voraussetzung	Warum nötig?
-Linux‑Distribution (Debian, Ubuntu, Fedora, Arch, …)	Das Skript nutzt Standard‑Unix‑Tools (cp, chmod, mkdir, ln, xdg-user-dir).
-Bash (≥ 4.x)	Das Skript ist ein Bash‑Shell‑Skript.
-Root‑Rechte (via sudo)	Zum Schreiben nach /usr/local/bin/ und in das System‑Icon‑Verzeichnis.
-gio (optional)	Setzt das Trust‑Attribut für GNOME‑Desktops (gio set … metadata::trusted true).
-update-desktop-database (optional)	Aktualisiert die Desktop‑Datenbank, damit das Symbol sofort erscheint.
-Python‑Interpreter (falls das Programm selbst ausgeführt wird)	Das eigentliche Programm ist ein Python‑Script.
 
-    Hinweis: Alle genannten Programme sind in den meisten Standard‑Repos enthalten.
-    Beispiel (Debian/Ubuntu): sudo apt install python3 gio-bin desktop-file-utils
+    Python 3.8+
+    GTK 3 oder GTK 4 (je nach Installation)
+    PyGObject (python3-gi Paket)
 
-Dateistruktur im Repo
-├─ zaehlerstaende.py          # Dein Python‑Programm
-├─ data/
-│   └─ zaehler.png           # 48 × 48 px‑Icon (PNG) – **jetzt im data‑Ordner**
-├─ install.sh  # Das Installations‑Script (siehe unten)
-└─ README.md                  # Diese Datei
+# Debian/Ubuntu Beispiel
+sudo apt update
+sudo apt install python3 python3-gi gir1.2-gtk-3.0 gir1.2-gtk-4.0
 
-Falls du das Icon in einem Unterordner (data/zaehler.png) hast, passe einfach die Variable ICON_SRC im Skript an.
-Installations‑Schritte (einmalig)
+    Die Anwendung prüft beim Start automatisch, welche GTK‑Version verfügbar ist und wählt das passende Backend (Wayland → X11).
 
-1. Repository klonen / Dateien holen
+Installation
 
-    git clone https://github.com/<dein-account>/zaehlergui.git
-    cd zaehlergui
+    Repository klonen
 
-2. Skript ausführbar machen
+    git clone https://github.com/dein-benutzername/zaehlerstaende.git
+    cd zaehlerstaende
 
-    chmod +x install.sh
+    Optional: virtuelles Umfeld
 
-3. Installation durchführen
+    python3 -m venv .venv
+    source .venv/bin/activate
+    pip install --upgrade pip
 
-    - Systemweit (Standard, benötigt sudo):
+    Abhängigkeiten prüfen (falls weitere Python‑Pakete nötig sind, hier ergänzen).
 
-        sudo bash install.sh
+    Das Projekt verwendet ausschließlich die Standardbibliothek und gi, daher ist kein zusätzlicher pip install nötig.
 
-      oder explizit:
+Schnellstart
 
-        sudo bash install.sh --system
+# Direktes Ausführen des Hauptskripts
+python3 __main__.py
 
-    - Nur für den aktuellen Benutzer (kein sudo):
+Das Programm legt beim ersten Start eine Konfigurationsdatei an:
 
-        bash install.sh --user
+~/.config/zaehlerstaende/config.json
 
-    - Alternativer Zielpfad:
+und speichert die Zählerstand‑Daten standardmäßig unter:
 
-        sudo bash install.sh --prefix /opt/zaehler
+~/.local/share/zaehlerstaende/zaehlerstaende.json
 
-Nach erfolgreicher Installation ist das Programm über das Anwendungsmenü erreichbar; zusätzlich wird
-eine `.desktop`‑Datei im passenden Applications‑Verzeichnis angelegt und eine Desktop‑Verknüpfung erstellt.
+Bedienung
+Hauptfenster
+Element	Funktion
+Datum, Strom, Gas, Wasser	Eingabe neuer Messwerte.
+„Zählerstand speichern“	Validiert Eingaben, fügt Eintrag hinzu und schreibt JSON.
+„Als CSV exportieren“	Erstellt eine CSV‑Datei im Home‑Verzeichnis (zaehlerstaende_YYYYMMDD_HHMMSS.csv).
+„Alle Daten löschen“	Zeigt Bestätigungsdialog, leert die JSON‑Datei.
+„Einstellungen“	Öffnet das Settings‑Fenster zum Ändern des Datenpfads.
+„Neue Datei erstellen“	Dialog zum Anlegen einer neuen JSON‑Datei und automatischer Wechsel.
+Settings‑Fenster
 
-Wie das Skript funktioniert – kurze Erläuterung
-Abschnitt	Aufgabe
-1. Programmdatei	Kopiert das Python‑Script nach /usr/local/bin/ (global im System) und macht es ausführbar.
-2. Icon	Legt ein 48 × 48 px‑PNG‑Icon in das standardisierte Icon‑Verzeichnis hicolor/48x48/apps/. Das Icon ist für alle Nutzer lesbar (chmod a+r).
-3. .desktop‑Eintrag	Erstellt eine zaehlerstaende.desktop‑Datei im persönlichen Anwendungsordner (~/.local/share/applications/). Der Eintrag referenziert das Programm und das Icon (nur den Namen, nicht den kompletten Pfad).
-4. Desktop‑Datenbank (optional)	Aktualisiert die interne Datenbank, sodass das neue Symbol sofort im Menü erscheint.
-5. Desktop‑Verknüpfung	Ermittelt den korrekten Desktop‑Ordner (xdg-user-dir DESKTOP), legt dort einen symbolischen Link zur .desktop‑Datei an und setzt das Ausführungs‑Flag. Für GNOME wird das Trust‑Attribut gesetzt, damit kein Warndialog erscheint.
-Nach der Installation – was tun?
+    Dateipfad – Vollständiger Pfad zur JSON‑Datei.
+    Durchsuchen… – Öffnet Dateiauswahl‑Dialog.
+    Speichern – Übernimmt den neuen Pfad, legt die Datei ggf. an und aktualisiert die UI.
 
-    Im Anwendungsmenü: Suche nach „Zählerstände“ – das Symbol sollte sichtbar sein.
-    Auf dem Schreibtisch: Doppelklicke die Verknüpfung, um das Programm zu starten.
-    Falls das Icon nicht angezeigt wird:
-        Prüfe, ob die Datei /usr/local/share/icons/hicolor/48x48/apps/zaehlerstaende.png existiert und lesbar ist (ls -l …).
-        Starte ggf. deine Desktop‑Session neu oder führe update-desktop-database erneut aus.
+Projektstruktur (Detail)
+data_manager.py
 
-Uninstallation
---------------
+class DataManager:
+    def __init__(self, datei="zaehlerstaende.json", pfad=None)
+    def laden(self) -> List[Dict]          # JSON → Python‑Liste
+    def speichern(self, daten: List[Dict]) # Python‑Liste → JSON
+    def export_csv(self, daten, ziel=None) # CSV‑Export
 
-Es gibt ein mitgeliefertes `uninstall.sh`‑Skript, das die für `install.sh` angelegten Dateien entfernt.
+Zusätzlich gibt es Hilfsfunktionen load_config() / save_config() für die globale Konfiguration.
+gtk_compat.py
 
-Beispiele:
+    Erkennt automatisch GTK 3 oder GTK 4.
+    Stellt Wrapper‑Funktionen wie add_child, show_all, get_children, remove_child, show_message_dialog, main_quit, main_iteration bereit.
+    Exportiert das geladene Gtk‑Modul und GLib.
 
-```bash
-# Systemweit (sudo):
-sudo bash uninstall.sh
+ui_helpers.py
 
-# Nur für aktuellen Benutzer:
-bash uninstall.sh --user
+Nur ein Legacy‑Export: re‑exports alles aus gtk_compat. Neue Code‑Bases sollten gtk_compat direkt importieren.
+settings_window.py
 
-# Vorschau (keine Löschaktion):
-bash uninstall.sh --user --dry-run
+Ein eigenständiges Gtk.Window, das den aktuellen Pfad anzeigt, per Dialog ändern lässt und einen Callback (on_apply) aufruft, sobald der Nutzer bestätigt.
+main_window.py
 
-# Interaktiv: vor jedem Eintrag fragen
-bash uninstall.sh --system --interactive
+    Definiert EingabeWidget (Formular) und ZaehlerstandApp (Hauptfenster).
+    Nutzt DataManager für Persistenz.
+    Bindet alle UI‑Aktionen (Speichern, Export, Löschen, Settings, Datei‑Erstellung).
 
-# Sofort löschen ohne Nachfrage
-sudo bash uninstall.sh --system --yes
-```
+__main__.py
 
-Hinweis: `uninstall.sh` unterstützt die gleichen `--prefix`‑Optionen wie `install.sh`.
+    Prüft, welches GTK‑Backend (Wayland/X11) funktioniert.
+    Setzt GDK_BACKEND entsprechend.
+    Lädt gtk_compat, main_window und startet die ZaehlerstandeAnwendung.
 
-Release erstellen
------------------
+zaehlerstaende.py
 
-Die Versionsnummer befindet sich in `VERSION`. Zum Erstellen eines Releases kannst du das mitgelieferte
-`release.sh` benutzen. Es commitet `VERSION` (falls nötig), legt ein annotiertes Tag `v<version>` an und pusht
-Commit und Tag zum Remote `origin`.
+Eine alternative, monolithische Implementierung (fast identisch zu main_window.py), die jedoch nicht die modulare Trennung nutzt. Kann als Referenz oder für Tests dienen.
+Anpassungen & Erweiterungen
 
-Beispiel:
+    Weitere Messgrößen – Ergänze Felder im EingabeWidget und passe DataManager‑Struktur an.
+    Diagramme – Integriere matplotlib oder pygal und erstelle ein neues Tab‑Widget, das die Werte visualisiert.
+    Mehrsprachigkeit – Durch Nutzung von gettext können UI‑Texte übersetzt werden.
+    Automatischer Sync – Implementiere optionales Cloud‑Backup (z. B. via Proton Drive API).
 
-```bash
-# Prüfen, was gemacht würde:
-./release.sh --dry-run
+Fehlersuche
+Symptom	Mögliche Ursache	Lösung
+„Weder GTK 4 noch GTK 3 sind installiert.“	Keine GTK‑Bibliotheken vorhanden.	Installiere gir1.2-gtk-3.0 oder gir1.2-gtk-4.0.
+Fenster erscheint nicht unter Wayland	Wayland‑Backend schlägt fehl.	Starte mit GDK_BACKEND=x11 python3 __main__.py oder installiere Wayland‑Support.
+Daten werden nicht gespeichert	Schreibrechte im Zielordner fehlen.	Stelle sicher, dass das Verzeichnis beschreibbar ist (chmod u+w …).
+CSV‑Export erzeugt leere Datei	Keine Einträge geladen.	Prüfe, ob zaehlerstaende.json tatsächlich Daten enthält.
 
-# Erstellen und pushen:
-./release.sh
+Log‑Ausgaben (auf STDERR) geben Hinweise zu Backend‑Erkennung und eventuellen Import‑Fehlern.
+Lizenz
 
-# Erstellen, aber nicht pushen:
-./release.sh --no-push
-```
+Dieses Projekt ist Open‑Source und steht unter der MIT‑Lizenz. Siehe LICENSE für Details.
+Kontakt
 
-Hinweis: `release.sh` muss in einem echten Git‑Checkout ausgeführt werden und benötigt Schreib‑/Push‑Rechte für
-das Remote‑Repo.
-
-Fehlerbehebung / FAQ
-Problem	mögliche Ursache	Lösung
-Keine Verknüpfung auf dem Desktop	Desktop‑Pfad ist nicht ~/Desktop (z. B. lokalisierte Sprache)	xdg-user-dir DESKTOP ausführen, Pfad prüfen, ggf. DESKTOP_DIR manuell setzen.
-Warnung „Datei ist nicht vertrauenswürdig“ (GNOME)	.desktop‑Datei ist nicht als trusted markiert	Rechtsklick → Eigenschaften → Als vertrauenswürdig markieren oder gio set … metadata::trusted true.
-Icon wird im Menü nicht angezeigt	Icon‑Datei fehlt, falsche Größe, falsche Berechtigungen	sudo chmod a+r /usr/local/share/icons/hicolor/48x48/apps/zaehlerstaende.png und ggf. weitere Größen (16x16, 32x32, 64x64) hinzufügen.
-sudo: command not found	sudo nicht installiert (z. B. minimaler Container)	Installiere sudo (z. B. apt install sudo) oder führe das Skript als root (su -c "./install_zaehlerstaende.sh").
-xdg-user-dir fehlt	Paket xdg-utils nicht installiert	sudo apt install xdg-utils (oder entsprechendes Paket für deine Distribution).
-Lizenz & Hinweis
-
-Dieses Installations‑Skript und die zugehörige Dokumentation stehen unter der MIT‑License.
-Sie dürfen frei verwendet, modifiziert und verbreitet werden – bitte behalten Sie den Lizenz‑Header im Skript bei.
-
-    Disclaimer:
-    Dieses Skript ändert System‑Verzeichnisse (/usr/local/...). Es wurde für typische Linux‑Desktop‑Umgebungen entwickelt und sollte nicht auf Server‑Instanzen ohne grafische Oberfläche eingesetzt werden. Prüfen Sie stets, ob Sie die nötigen Rechte besitzen, bevor Sie Änderungen am System vornehmen.
-
-Viel Spaß beim Verwalten deiner Zählerstände! 🚀
+Fragen, Bugs oder Feature‑Wünsche?
+Eröffne ein Issue im GitHub‑Repository oder kontaktiere den Maintainer per E‑Mail.
