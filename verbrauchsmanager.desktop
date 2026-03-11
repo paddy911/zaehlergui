@@ -1,0 +1,19 @@
+[Desktop Entry]
+Version=1.0
+Type=Application
+Name=Verbrauchsmanager
+Name[de]=Verbrauchsmanager
+GenericName=Energie- und Wasserverbrauch
+GenericName[de]=Energie- und Wasserverbrauch
+Comment=Strom, Wasser und Gas erfassen und auswerten
+Comment[de]=Strom (kWh), Wasser (m³) und Gas (m³) erfassen und auswerten
+Exec=/usr/bin/verbrauchsmanager
+Icon=verbrauchsmanager
+Terminal=false
+StartupNotify=true
+StartupWMClass=verbrauchsmanager
+Categories=Utility;Finance;Office;
+Keywords=Strom;Wasser;Gas;Verbrauch;kWh;Energie;Abrechnung;SQLite;
+Keywords[en]=electricity;water;gas;consumption;kWh;energy;billing;SQLite;
+MimeType=application/x-sqlite3;
+X-AppStream-Ignore=false

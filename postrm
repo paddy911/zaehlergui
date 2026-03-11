@@ -1,0 +1,29 @@
+#!/bin/bash
+# postrm – wird nach der Deinstallation ausgeführt
+set -e
+
+case "$1" in
+    purge)
+        # Systemweite Konfigurationsdaten löschen (Benutzerdaten bleiben erhalten!)
+        rm -rf /etc/verbrauchsmanager 2>/dev/null || true
+        echo "ℹ️  Hinweis: Ihre persönlichen Daten in ~/.local/share/verbrauchsmanager"
+        echo "   wurden NICHT gelöscht. Sie können diese manuell entfernen."
+        ;;
+
+    remove|upgrade|failed-upgrade|abort-install|abort-upgrade|disappear)
+        # Desktop-Datenbank + Icon-Cache auffrischen
+        if command -v update-desktop-database &>/dev/null; then
+            update-desktop-database -q /usr/share/applications || true
+        fi
+        if command -v gtk-update-icon-cache &>/dev/null; then
+            gtk-update-icon-cache -q -t -f /usr/share/icons/hicolor || true
+        fi
+        ;;
+
+    *)
+        echo "postrm: unbekannter Aufruf '$1'" >&2
+        exit 1
+        ;;
+esac
+
+exit 0

@@ -1,0 +1,24 @@
+#!/bin/bash
+# prerm – wird vor der Deinstallation ausgeführt
+set -e
+
+case "$1" in
+    remove|upgrade|deconfigure)
+        # Alternativen-Eintrag entfernen
+        if command -v update-alternatives &>/dev/null; then
+            update-alternatives --remove \
+                verbrauchsmanager \
+                /usr/bin/verbrauchsmanager 2>/dev/null || true
+        fi
+        ;;
+
+    failed-upgrade)
+        ;;
+
+    *)
+        echo "prerm: unbekannter Aufruf '$1'" >&2
+        exit 1
+        ;;
+esac
+
+exit 0

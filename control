@@ -1,0 +1,33 @@
+Package: verbrauchsmanager
+Version: 1.0.0
+Section: utils
+Priority: optional
+Architecture: amd64
+Installed-Size: 12288
+Depends: libqt6core6 (>= 6.2.0),
+         libqt6gui6 (>= 6.2.0),
+         libqt6qml6 (>= 6.2.0),
+         libqt6quick6 (>= 6.2.0),
+         libqt6quickcontrols2-6 (>= 6.2.0),
+         libqt6widgets6 (>= 6.2.0),
+         libgl1,
+         libc6 (>= 2.31)
+Recommends: qml6-module-qtquick-controls,
+            qml6-module-qtquick-layouts,
+            qml6-module-qtquick-dialogs
+Maintainer: Verbrauchsmanager <kontakt@verbrauchsmanager.de>
+Homepage: https://github.com/verbrauchsmanager/verbrauchsmanager
+Description: Strom-, Wasser- und Gasverbrauch erfassen und auswerten
+ Verbrauchsmanager ist ein Desktop-Programm zum komfortablen Erfassen
+ und Verwalten von Energie- und Wasserverbrauchsdaten.
+ .
+ Funktionen:
+  * Strom (kWh), Wasser (m³) und Gas (m³) erfassen
+  * SQLite-Datenbank mit wählbarem Speicherort
+  * Datenbank-Pfad und -Größe werden angezeigt
+  * Neue Datenbank erstellen oder vorhandene öffnen
+  * Export als CSV und Excel (XLSX)
+  * Statistiken und Gesamtübersicht
+  * Einträge löschen
+ .
+ Gebaut mit Rust und Qt 6 QML.

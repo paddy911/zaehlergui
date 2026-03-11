@@ -1,0 +1,114 @@
+# .github/workflows/build-deb.yml
+# ─────────────────────────────────────────────────────────────────────────────
+# GitHub Actions Workflow: Baut automatisch ein .deb-Paket bei jedem Push
+# auf den main-Branch und bei Release-Tags.
+#
+# Erzeugte Artefakte:
+#   - verbrauchsmanager_<version>_amd64.deb  (Download-Artefakt)
+#   - Automatischer GitHub-Release bei v*-Tags
+# ─────────────────────────────────────────────────────────────────────────────
+
+name: Build .deb Paket
+
+on:
+  push:
+    branches: [ main, develop ]
+    tags:
+      - 'v*'
+  pull_request:
+    branches: [ main ]
+
+env:
+  CARGO_TERM_COLOR: always
+  RUST_BACKTRACE: 1
+
+jobs:
+  build-deb:
+    name: Build Debian Package (Ubuntu 22.04)
+    runs-on: ubuntu-22.04
+
+    steps:
+      # ── Quellcode laden ──────────────────────────────────────────────────────
+      - name: Quellcode auschecken
+        uses: actions/checkout@v4
+
+      # ── Rust-Toolchain ────────────────────────────────────────────────────────
+      - name: Rust stable installieren
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Rust-Cache laden
+        uses: Swatinem/rust-cache@v2
+        with:
+          cache-on-failure: true
+
+      # ── System-Abhängigkeiten ─────────────────────────────────────────────────
+      - name: Qt6 und Build-Tools installieren
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y \
+            build-essential cmake ninja-build pkg-config \
+            qt6-base-dev qt6-declarative-dev qt6-tools-dev \
+            libqt6core6 libqt6gui6 libqt6qml6 libqt6quick6 \
+            libqt6quickcontrols2-6 libqt6widgets6 \
+            libgl1-mesa-dev libsqlite3-dev \
+            dpkg-dev fakeroot lintian \
+            qml6-module-qtquick-controls \
+            qml6-module-qtquick-layouts \
+            qml6-module-qtquick-dialogs
+
+      # ── Version aus Cargo.toml lesen ──────────────────────────────────────────
+      - name: Version lesen
+        id: version
+        run: |
+          VERSION=$(grep '^version' Cargo.toml | head -1 | sed 's/.*"\(.*\)".*/\1/')
+          echo "version=${VERSION}" >> "$GITHUB_OUTPUT"
+          echo "Paketversion: ${VERSION}"
+
+      # ── Rust kompilieren ──────────────────────────────────────────────────────
+      - name: Release-Binary kompilieren
+        run: cargo build --release --locked
+
+      # ── .deb bauen ────────────────────────────────────────────────────────────
+      - name: .deb Paket bauen
+        run: |
+          chmod +x packaging/scripts/build-deb.sh
+          bash packaging/scripts/build-deb.sh --skip-compile
+
+      # ── Lintian-Prüfung ───────────────────────────────────────────────────────
+      - name: Lintian Qualitätsprüfung
+        run: |
+          lintian --color always \
+            dist/verbrauchsmanager_${{ steps.version.outputs.version }}_amd64.deb || true
+
+      # ── Paket als Artefakt hochladen ──────────────────────────────────────────
+      - name: .deb als Artefakt hochladen
+        uses: actions/upload-artifact@v4
+        with:
+          name: verbrauchsmanager-deb-${{ steps.version.outputs.version }}
+          path: dist/verbrauchsmanager_*.deb
+          retention-days: 30
+
+      # ── GitHub Release erstellen (nur bei v*-Tags) ────────────────────────────
+      - name: GitHub Release erstellen
+        if: startsWith(github.ref, 'refs/tags/v')
+        uses: softprops/action-gh-release@v1
+        with:
+          name: "Verbrauchsmanager v${{ steps.version.outputs.version }}"
+          body: |
+            ## ⚡ Verbrauchsmanager v${{ steps.version.outputs.version }}
+
+            ### Installation
+            ```bash
+            # Paket herunterladen und installieren
+            sudo dpkg -i verbrauchsmanager_${{ steps.version.outputs.version }}_amd64.deb
+            sudo apt-get install -f   # Abhängigkeiten nachholen
+            ```
+
+            ### Voraussetzungen
+            - Ubuntu 22.04 / Debian 12 oder neuer
+            - Qt 6.2 oder neuer (`sudo apt install libqt6core6 libqt6qml6 libqt6quick6`)
+          files: dist/verbrauchsmanager_*.deb
+          draft: false
+          prerelease: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

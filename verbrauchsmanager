@@ -1,0 +1,54 @@
+#!/bin/bash
+# /usr/bin/verbrauchsmanager
+# ─────────────────────────────────────────────────────────────────────────────
+# Startskript für den Verbrauchsmanager.
+# Lädt die systemweite Konfiguration, setzt Qt-Umgebungsvariablen
+# und startet das eigentliche Binary.
+# ─────────────────────────────────────────────────────────────────────────────
+
+BINARY="/usr/lib/verbrauchsmanager/verbrauchsmanager-bin"
+CONF="/etc/verbrauchsmanager/verbrauchsmanager.conf"
+
+# ── Systemweite Konfiguration laden ──────────────────────────────────────────
+if [[ -f "$CONF" ]]; then
+    # Nur sichere Schlüssel einlesen (kein beliebiges Shell-Execution)
+    while IFS='=' read -r key value; do
+        # Kommentare und leere Zeilen überspringen
+        [[ "$key" =~ ^[[:space:]]*# ]] && continue
+        [[ -z "${key// }" ]]           && continue
+        key="${key// /}"
+        value="${value// /}"
+        case "$key" in
+            DB_PFAD)
+                [[ -n "$value" ]] && export VERBRAUCHSMANAGER_DB_PFAD="$value"
+                ;;
+            QT_QUICK_CONTROLS_STYLE)
+                [[ -n "$value" ]] && export QT_QUICK_CONTROLS_STYLE="$value"
+                ;;
+            SPRACHE)
+                [[ -n "$value" ]] && export LANG="$value"
+                ;;
+        esac
+    done < "$CONF"
+fi
+
+# ── Qt-Standardwerte (falls nicht gesetzt) ────────────────────────────────────
+export QT_QUICK_CONTROLS_STYLE="${QT_QUICK_CONTROLS_STYLE:-Fusion}"
+
+# Wayland bevorzugen, wenn vorhanden; sonst auf X11 zurückfallen
+if [[ -n "$WAYLAND_DISPLAY" ]] && [[ -z "$QT_QPA_PLATFORM" ]]; then
+    export QT_QPA_PLATFORM="wayland;xcb"
+fi
+
+# High-DPI-Skalierung (Qt 6 macht das nativ, trotzdem explizit setzen)
+export QT_ENABLE_HIGHDPI_SCALING=1
+
+# ── Binary starten ────────────────────────────────────────────────────────────
+if [[ ! -x "$BINARY" ]]; then
+    echo "❌ Fehler: Binary nicht gefunden: $BINARY" >&2
+    echo "   Bitte reinstallieren Sie das Paket:" >&2
+    echo "   sudo apt install --reinstall verbrauchsmanager" >&2
+    exit 1
+fi
+
+exec "$BINARY" "$@"

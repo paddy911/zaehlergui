@@ -1,0 +1,40 @@
+#!/bin/bash
+# postinst – wird nach der Installation ausgeführt
+set -e
+
+case "$1" in
+    configure)
+        # Desktop-Datenbank aktualisieren (damit das App-Symbol erscheint)
+        if command -v update-desktop-database &>/dev/null; then
+            update-desktop-database -q /usr/share/applications || true
+        fi
+
+        # Icon-Cache aktualisieren
+        if command -v gtk-update-icon-cache &>/dev/null; then
+            gtk-update-icon-cache -q -t -f /usr/share/icons/hicolor || true
+        fi
+
+        # Alternativen registrieren (optional, ermöglicht "verbrauchsmanager" im Terminal)
+        if command -v update-alternatives &>/dev/null; then
+            update-alternatives --install \
+                /usr/local/bin/verbrauchsmanager \
+                verbrauchsmanager \
+                /usr/bin/verbrauchsmanager \
+                50 || true
+        fi
+
+        echo "✅ Verbrauchsmanager wurde erfolgreich installiert."
+        echo "   Starten Sie das Programm über das Anwendungsmenü oder mit:"
+        echo "   $ verbrauchsmanager"
+        ;;
+
+    abort-upgrade|abort-remove|abort-deconfigure)
+        ;;
+
+    *)
+        echo "postinst: unbekannter Aufruf '$1'" >&2
+        exit 1
+        ;;
+esac
+
+exit 0
