@@ -1,0 +1,87 @@
+{
+    // ─────────────────────────────────────────────────────────────────────────
+    // VS Code Debugger-Konfigurationen für den Verbrauchsmanager
+    //
+    // Voraussetzung: CodeLLDB-Erweiterung installieren
+    //   VS Code → Extensions → "CodeLLDB" von Vadim Chugunov
+    //   Extension-ID: vadimcpp.lldb
+    //
+    // Starten: F5  oder  Ausführen → Debugging starten
+    // ─────────────────────────────────────────────────────────────────────────
+    "version": "0.2.0",
+    "configurations": [
+
+        // ── Debug-Build starten und debuggen ──────────────────────────────────
+        {
+            "type":    "lldb",
+            "request": "launch",
+            "name":    "🐛 Debug: Verbrauchsmanager",
+            "cargo": {
+                "args":    ["build", "--bin=verbrauchsmanager", "--package=verbrauchsmanager"],
+                "filter": {
+                    "name": "verbrauchsmanager",
+                    "kind": "bin"
+                }
+            },
+            "args": [],
+            "cwd": "${workspaceFolder}",
+            "env": {
+                "QT_QUICK_CONTROLS_STYLE": "Fusion",
+                "RUST_BACKTRACE": "1",
+                "RUST_LOG": "debug"
+            },
+            "sourceLanguages": ["rust"],
+            "console": "integratedTerminal"
+        },
+
+        // ── Release-Build debuggen (für Performance-Tests) ────────────────────
+        {
+            "type":    "lldb",
+            "request": "launch",
+            "name":    "🚀 Release: Verbrauchsmanager",
+            "cargo": {
+                "args":    ["build", "--release", "--bin=verbrauchsmanager"],
+                "filter": {
+                    "name": "verbrauchsmanager",
+                    "kind": "bin"
+                }
+            },
+            "args": [],
+            "cwd": "${workspaceFolder}",
+            "env": {
+                "QT_QUICK_CONTROLS_STYLE": "Fusion"
+            },
+            "sourceLanguages": ["rust"],
+            "console": "integratedTerminal"
+        },
+
+        // ── Vorhandenes Binary anhängen (Attach) ──────────────────────────────
+        {
+            "type":    "lldb",
+            "request": "attach",
+            "name":    "🔗 Attach: laufenden Prozess anhängen",
+            "pid":     "${command:pickProcess}",
+            "sourceLanguages": ["rust"]
+        },
+
+        // ── Unit-Tests debuggen ───────────────────────────────────────────────
+        {
+            "type":    "lldb",
+            "request": "launch",
+            "name":    "🧪 Debug: Tests",
+            "cargo": {
+                "args":    ["test", "--no-run", "--package=verbrauchsmanager"],
+                "filter": {
+                    "name": "verbrauchsmanager",
+                    "kind": "lib"
+                }
+            },
+            "args":    [],
+            "cwd":     "${workspaceFolder}",
+            "env": {
+                "RUST_BACKTRACE": "1"
+            },
+            "sourceLanguages": ["rust"]
+        }
+    ]
+}

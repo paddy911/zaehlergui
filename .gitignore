@@ -1,0 +1,58 @@
+# ─────────────────────────────────────────────────────────────────────────────
+# .gitignore für Verbrauchsmanager (Rust + Qt6)
+# ─────────────────────────────────────────────────────────────────────────────
+
+# ── Rust / Cargo ──────────────────────────────────────────────────────────────
+/target/
+# Cargo.lock bei Binaries einchecken, bei Libraries nicht
+# Cargo.lock
+
+# ── Build-Ausgaben ────────────────────────────────────────────────────────────
+/dist/*.deb
+/dist/*.rpm
+
+# ── Qt / CMake (falls cmake direkt verwendet wird) ───────────────────────────
+build/
+CMakeCache.txt
+CMakeFiles/
+cmake_install.cmake
+Makefile
+*.moc
+moc_*.cpp
+qrc_*.cpp
+*.pro.user
+*.qmlc
+*.jsc
+
+# ── Betriebssystem ────────────────────────────────────────────────────────────
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+# Windows
+Thumbs.db
+desktop.ini
+# Linux
+*~
+.nfs*
+
+# ── VS Code ───────────────────────────────────────────────────────────────────
+# Nutzereinstellungen NICHT einchecken (sind machine-spezifisch)
+# Projekteinstellungen (.vscode/) EINCHECKEN ✅
+# .vscode/
+
+# ── Temporäre Dateien ─────────────────────────────────────────────────────────
+*.tmp
+*.bak
+*.swp
+*.orig
+*.log
+
+# ── Benutzerdaten (Datenbank-Testdateien) ─────────────────────────────────────
+*.db
+*.sqlite
+*.sqlite3
+
+# ── Umgebungsvariablen ────────────────────────────────────────────────────────
+.env
+.env.local

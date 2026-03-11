@@ -1,0 +1,137 @@
+{
+    // ─────────────────────────────────────────────────────────────────────────
+    // VS Code Einstellungen für den Verbrauchsmanager (Rust + Qt6 QML)
+    // Gilt nur für dieses Projekt (nicht global)
+    // ─────────────────────────────────────────────────────────────────────────
+
+    // ── Editor ────────────────────────────────────────────────────────────────
+    "editor.formatOnSave": true,
+    "editor.formatOnPaste": true,
+    "editor.tabSize": 4,
+    "editor.insertSpaces": true,
+    "editor.rulers": [100],
+    "editor.wordWrap": "wordWrapColumn",
+    "editor.wordWrapColumn": 100,
+    "editor.renderWhitespace": "boundary",
+    "editor.bracketPairColorization.enabled": true,
+    "editor.guides.bracketPairs": "active",
+    "editor.inlayHints.enabled": "on",
+    "editor.stickyScroll.enabled": true,
+    "editor.minimap.enabled": true,
+    "editor.minimap.renderCharacters": false,
+
+    // ── Rust Analyzer ─────────────────────────────────────────────────────────
+    "rust-analyzer.checkOnSave": true,
+    "rust-analyzer.check.command": "clippy",
+    "rust-analyzer.check.extraArgs": [
+        "--",
+        "-W", "clippy::all",
+        "-W", "clippy::pedantic",
+        "-A", "clippy::module_name_repetitions"
+    ],
+
+    // Inlay Hints: zeigt Typinformationen direkt im Code an
+    "rust-analyzer.inlayHints.typeHints.enable": true,
+    "rust-analyzer.inlayHints.parameterHints.enable": true,
+    "rust-analyzer.inlayHints.chainingHints.enable": true,
+    "rust-analyzer.inlayHints.lifetimeElisionHints.enable": "skip_trivial",
+
+    // Automatisch Importe hinzufügen
+    "rust-analyzer.imports.granularity.group": "module",
+    "rust-analyzer.imports.prefix": "self",
+
+    // Cargo-Features
+    "rust-analyzer.cargo.features": "all",
+    "rust-analyzer.cargo.buildScripts.enable": true,
+
+    // Proc-Macros aktivieren (nötig für cxx-qt)
+    "rust-analyzer.procMacro.enable": true,
+    "rust-analyzer.procMacro.attributes.enable": true,
+
+    // ── Datei-Zuordnungen ─────────────────────────────────────────────────────
+    "files.associations": {
+        "*.qml":    "qml",
+        "*.toml":   "toml",
+        "Cargo.*":  "toml",
+        "*.md":     "markdown",
+        "postinst": "shellscript",
+        "prerm":    "shellscript",
+        "postrm":   "shellscript",
+        "conffiles":"text"
+    },
+
+    // ── Datei-Ausschlüsse (Explorer aufräumen) ────────────────────────────────
+    "files.exclude": {
+        "**/target":          true,
+        "**/.git":            false,
+        "**/dist/*.deb":      false
+    },
+    "search.exclude": {
+        "**/target":          true,
+        "**/dist":            true
+    },
+    "files.watcherExclude": {
+        "**/target/**":       true
+    },
+
+    // ── Formatierung pro Sprache ──────────────────────────────────────────────
+    "[rust]": {
+        "editor.defaultFormatter": "rust-lang.rust-analyzer",
+        "editor.formatOnSave": true,
+        "editor.tabSize": 4
+    },
+    "[qml]": {
+        "editor.tabSize": 4,
+        "editor.insertSpaces": true
+    },
+    "[toml]": {
+        "editor.defaultFormatter": "tamasfe.even-better-toml"
+    },
+    "[shellscript]": {
+        "editor.tabSize": 4,
+        "editor.defaultFormatter": "mads-hartmann.bash-ide-vscode"
+    },
+    "[markdown]": {
+        "editor.wordWrap": "on",
+        "editor.formatOnSave": false
+    },
+    "[yaml]": {
+        "editor.tabSize": 2
+    },
+
+    // ── Terminal ──────────────────────────────────────────────────────────────
+    "terminal.integrated.defaultProfile.linux": "bash",
+    "terminal.integrated.fontSize": 14,
+    "terminal.integrated.env.linux": {
+        // Qt6 Pfad – ggf. anpassen falls Qt nicht im Standard-PATH liegt
+        // "CMAKE_PREFIX_PATH": "/opt/Qt/6.6.0/gcc_64",
+        "QT_QUICK_CONTROLS_STYLE": "Fusion"
+    },
+
+    // ── Git ───────────────────────────────────────────────────────────────────
+    "git.autofetch": true,
+    "git.confirmSync": false,
+    "git.enableSmartCommit": true,
+    "gitlens.hovers.currentLine.over": "line",
+
+    // ── Error Lens ────────────────────────────────────────────────────────────
+    "errorLens.enabledDiagnosticLevels": ["error", "warning", "info"],
+    "errorLens.followCursor": "allLines",
+
+    // ── Better Comments ───────────────────────────────────────────────────────
+    "better-comments.tags": [
+        { "tag": "!",    "color": "#FF2D00", "strikethrough": false, "bold": true  },
+        { "tag": "?",    "color": "#3498DB", "strikethrough": false, "bold": false },
+        { "tag": "//",   "color": "#474747", "strikethrough": true,  "bold": false },
+        { "tag": "todo", "color": "#FF8C00", "strikethrough": false, "bold": true  },
+        { "tag": "fixme","color": "#FF2D00", "strikethrough": false, "bold": true  },
+        { "tag": "──",   "color": "#2E86AB", "strikethrough": false, "bold": false }
+    ],
+
+    // ── Sonstiges ─────────────────────────────────────────────────────────────
+    "explorer.confirmDelete": true,
+    "explorer.sortOrder": "type",
+    "breadcrumbs.enabled": true,
+    "workbench.tree.indent": 16,
+    "workbench.colorTheme": "Default Dark Modern"
+}

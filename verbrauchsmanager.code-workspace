@@ -1,0 +1,47 @@
+{
+    // ─────────────────────────────────────────────────────────────────────────
+    // VS Code Workspace-Datei für den Verbrauchsmanager
+    // Öffnen mit: code verbrauchsmanager.code-workspace
+    // ─────────────────────────────────────────────────────────────────────────
+    "folders": [
+        {
+            "name": "⚡ Verbrauchsmanager",
+            "path": "."
+        }
+    ],
+    "settings": {
+        // Workspace-spezifische Überschreibungen (ergänzen settings.json)
+        "workbench.colorCustomizations": {
+            // Titelleiste in Projektfarbe einfärben
+            "titleBar.activeBackground":   "#1A2744",
+            "titleBar.activeForeground":   "#A8DADC",
+            "titleBar.inactiveBackground": "#243354",
+            "activityBar.background":      "#1A2744",
+            "statusBar.background":        "#2E86AB",
+            "statusBar.foreground":        "#FFFFFF"
+        },
+        "window.title": "⚡ Verbrauchsmanager – ${activeEditorShort}${separator}${rootName}"
+    },
+    "extensions": {
+        "recommendations": [
+            "rust-lang.rust-analyzer",
+            "serayuzgur.crates",
+            "tamasfe.even-better-toml",
+            "bbenoist.qml",
+            "eamodio.gitlens",
+            "usernamehw.errorlens",
+            "mads-hartmann.bash-ide-vscode",
+            "timonwong.shellcheck",
+            "github.vscode-github-actions",
+            "vadimcpp.lldb"
+        ]
+    },
+    "launch": {
+        "configurations": [],
+        "compounds": []
+    },
+    "tasks": {
+        "version": "2.0.0",
+        "tasks": []
+    }
+}

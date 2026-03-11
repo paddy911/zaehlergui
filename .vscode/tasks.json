@@ -1,0 +1,287 @@
+{
+    // ─────────────────────────────────────────────────────────────────────────
+    // VS Code Aufgaben (Tasks) für den Verbrauchsmanager
+    // Aufrufen mit: Strg+Shift+B  (Standard-Build)
+    //               Strg+Shift+P → "Tasks: Run Task"
+    // ─────────────────────────────────────────────────────────────────────────
+    "version": "2.0.0",
+    "tasks": [
+
+        // ══════════════════════════════════════════════════════════════════════
+        // GRUPPE: RUST BUILD
+        // ══════════════════════════════════════════════════════════════════════
+
+        {
+            "label": "🔨 Rust: Debug-Build",
+            "type": "shell",
+            "command": "cargo build",
+            "group": {
+                "kind": "build",
+                "isDefault": true
+            },
+            "presentation": {
+                "reveal": "always",
+                "panel": "shared",
+                "clear": true,
+                "echo": true
+            },
+            "problemMatcher": "$rustc",
+            "detail": "Kompiliert das Projekt im Debug-Modus (schnell, mit Debuginfo)"
+        },
+
+        {
+            "label": "🚀 Rust: Release-Build",
+            "type": "shell",
+            "command": "cargo build --release",
+            "group": "build",
+            "presentation": {
+                "reveal": "always",
+                "panel": "shared",
+                "clear": true
+            },
+            "problemMatcher": "$rustc",
+            "detail": "Kompiliert optimiert für den Release (langsamer, kleineres Binary)"
+        },
+
+        {
+            "label": "▶️  Rust: Starten (Debug)",
+            "type": "shell",
+            "command": "QT_QUICK_CONTROLS_STYLE=Fusion cargo run",
+            "group": {
+                "kind": "test",
+                "isDefault": true
+            },
+            "presentation": {
+                "reveal": "always",
+                "panel": "dedicated",
+                "clear": true
+            },
+            "problemMatcher": "$rustc",
+            "detail": "Kompiliert und startet das Programm direkt"
+        },
+
+        {
+            "label": "⚡ Rust: Starten (Release)",
+            "type": "shell",
+            "command": "QT_QUICK_CONTROLS_STYLE=Fusion cargo run --release",
+            "group": "test",
+            "presentation": {
+                "reveal": "always",
+                "panel": "dedicated",
+                "clear": true
+            },
+            "problemMatcher": "$rustc",
+            "detail": "Release-Build starten"
+        },
+
+        // ══════════════════════════════════════════════════════════════════════
+        // GRUPPE: CODE-QUALITÄT
+        // ══════════════════════════════════════════════════════════════════════
+
+        {
+            "label": "🔍 Clippy: Code prüfen",
+            "type": "shell",
+            "command": "cargo clippy -- -W clippy::all -W clippy::pedantic",
+            "group": "build",
+            "presentation": {
+                "reveal": "always",
+                "panel": "shared",
+                "clear": true
+            },
+            "problemMatcher": "$rustc",
+            "detail": "Führt den Rust-Linter (Clippy) aus und zeigt Verbesserungsvorschläge"
+        },
+
+        {
+            "label": "✨ Rustfmt: Code formatieren",
+            "type": "shell",
+            "command": "cargo fmt",
+            "group": "build",
+            "presentation": {
+                "reveal": "silent",
+                "panel": "shared"
+            },
+            "problemMatcher": [],
+            "detail": "Formatiert den gesamten Rust-Code einheitlich"
+        },
+
+        {
+            "label": "🧹 Clippy + Format (alles)",
+            "dependsOn": [
+                "✨ Rustfmt: Code formatieren",
+                "🔍 Clippy: Code prüfen"
+            ],
+            "dependsOrder": "sequence",
+            "group": "build",
+            "problemMatcher": [],
+            "detail": "Formatiert und prüft den Code in einem Schritt"
+        },
+
+        {
+            "label": "🧪 Tests ausführen",
+            "type": "shell",
+            "command": "cargo test -- --nocapture",
+            "group": {
+                "kind": "test",
+                "isDefault": false
+            },
+            "presentation": {
+                "reveal": "always",
+                "panel": "shared",
+                "clear": true
+            },
+            "problemMatcher": "$rustc",
+            "detail": "Führt alle Unit-Tests aus"
+        },
+
+        // ══════════════════════════════════════════════════════════════════════
+        // GRUPPE: DEBIAN PAKETIERUNG
+        // ══════════════════════════════════════════════════════════════════════
+
+        {
+            "label": "📦 DEB: Paket bauen (komplett)",
+            "type": "shell",
+            "command": "bash packaging/scripts/build-deb.sh",
+            "group": "build",
+            "presentation": {
+                "reveal": "always",
+                "panel": "dedicated",
+                "clear": true
+            },
+            "problemMatcher": [],
+            "detail": "Kompiliert Rust und baut das vollständige .deb Paket"
+        },
+
+        {
+            "label": "📦 DEB: Nur packen (kein Compile)",
+            "type": "shell",
+            "command": "bash packaging/scripts/build-deb.sh --skip-compile",
+            "group": "build",
+            "presentation": {
+                "reveal": "always",
+                "panel": "dedicated",
+                "clear": true
+            },
+            "problemMatcher": [],
+            "detail": "Baut das .deb ohne neuen Compile (Binary muss vorhanden sein)"
+        },
+
+        {
+            "label": "🔎 DEB: Paketinhalt anzeigen",
+            "type": "shell",
+            "command": "dpkg-deb --contents dist/verbrauchsmanager_*.deb 2>/dev/null || echo 'Kein .deb gefunden – zuerst bauen!'",
+            "group": "none",
+            "presentation": {
+                "reveal": "always",
+                "panel": "shared",
+                "clear": true
+            },
+            "problemMatcher": [],
+            "detail": "Zeigt alle Dateien im .deb Paket"
+        },
+
+        {
+            "label": "✅ DEB: Lintian-Prüfung",
+            "type": "shell",
+            "command": "lintian --color always dist/verbrauchsmanager_*.deb 2>/dev/null || echo 'lintian nicht installiert: sudo apt install lintian'",
+            "group": "none",
+            "presentation": {
+                "reveal": "always",
+                "panel": "shared",
+                "clear": true
+            },
+            "problemMatcher": [],
+            "detail": "Prüft das .deb Paket auf Debian-Policy-Konformität"
+        },
+
+        {
+            "label": "💾 DEB: Installieren (sudo)",
+            "type": "shell",
+            "command": "sudo bash packaging/scripts/install.sh",
+            "group": "none",
+            "presentation": {
+                "reveal": "always",
+                "panel": "dedicated",
+                "clear": true
+            },
+            "problemMatcher": [],
+            "detail": "Installiert das .deb auf dem lokalen System (benötigt sudo)"
+        },
+
+        {
+            "label": "🗑️  DEB: Deinstallieren (sudo)",
+            "type": "shell",
+            "command": "sudo bash packaging/scripts/uninstall.sh",
+            "group": "none",
+            "presentation": {
+                "reveal": "always",
+                "panel": "dedicated",
+                "clear": true
+            },
+            "problemMatcher": [],
+            "detail": "Deinstalliert den Verbrauchsmanager vom System"
+        },
+
+        // ══════════════════════════════════════════════════════════════════════
+        // GRUPPE: GIT / GITHUB
+        // ══════════════════════════════════════════════════════════════════════
+
+        {
+            "label": "🏷️  Git: Release-Tag erstellen",
+            "type": "shell",
+            "command": "VERSION=$(grep '^version' Cargo.toml | head -1 | sed 's/.*\"\\(.*\\)\".*/\\1/') && git tag v${VERSION} && git push origin v${VERSION} && echo \"✅ Tag v${VERSION} gepusht – GitHub Actions startet den Build\"",
+            "group": "none",
+            "presentation": {
+                "reveal": "always",
+                "panel": "shared",
+                "clear": false
+            },
+            "problemMatcher": [],
+            "detail": "Erstellt einen Git-Tag aus der Version in Cargo.toml und pusht ihn (löst CI/CD aus)"
+        },
+
+        {
+            "label": "📤 Git: Push (main)",
+            "type": "shell",
+            "command": "git push origin main",
+            "group": "none",
+            "presentation": {
+                "reveal": "always",
+                "panel": "shared"
+            },
+            "problemMatcher": [],
+            "detail": "Pusht den aktuellen Stand auf GitHub"
+        },
+
+        // ══════════════════════════════════════════════════════════════════════
+        // GRUPPE: AUFRÄUMEN
+        // ══════════════════════════════════════════════════════════════════════
+
+        {
+            "label": "🧹 Cargo: Clean",
+            "type": "shell",
+            "command": "cargo clean",
+            "group": "none",
+            "presentation": {
+                "reveal": "always",
+                "panel": "shared",
+                "clear": true
+            },
+            "problemMatcher": [],
+            "detail": "Löscht den target/-Ordner (gibt Speicher frei)"
+        },
+
+        {
+            "label": "🗑️  Dist: Aufräumen",
+            "type": "shell",
+            "command": "rm -rf dist/ && echo '✅ dist/ gelöscht'",
+            "group": "none",
+            "presentation": {
+                "reveal": "always",
+                "panel": "shared"
+            },
+            "problemMatcher": [],
+            "detail": "Löscht alle gebauten .deb Pakete"
+        }
+    ]
+}

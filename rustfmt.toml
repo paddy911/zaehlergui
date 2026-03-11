@@ -1,0 +1,27 @@
+# rustfmt.toml
+# ─────────────────────────────────────────────────────────────────────────────
+# Code-Formatierung für den Verbrauchsmanager.
+# Wird von "cargo fmt" und dem rust-analyzer in VS Code verwendet.
+# ─────────────────────────────────────────────────────────────────────────────
+
+edition              = "2021"
+max_width            = 100       # Maximale Zeilenlänge (passend zu editor.rulers)
+tab_spaces           = 4         # Einrückung mit 4 Leerzeichen
+hard_tabs            = false     # Leerzeichen statt Tabs
+
+# Kommentare
+wrap_comments        = true      # Lange Kommentare umbrechen
+comment_width        = 100       # Kommentar-Breite
+
+# Imports sortieren und gruppieren
+imports_granularity  = "Module"  # use crate::modul::{a, b} zusammenfassen
+imports_layout       = "HorizontalVertical"
+group_imports        = "StdExternalCrate"  # std → extern crates → lokal
+
+# Funktionen
+fn_params_layout     = "Tall"    # Parameter untereinander bei langen Signaturen
+brace_style          = "SameLineClosure"
+
+# Sonstiges
+trailing_comma       = "Vertical"  # Letztes Komma in mehrzeiligen Strukturen
+use_small_heuristics = "Default"

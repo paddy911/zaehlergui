@@ -1,0 +1,64 @@
+{
+    // ─────────────────────────────────────────────────────────────────────────
+    // Empfohlene VS Code Erweiterungen für den Verbrauchsmanager
+    // Öffne die Kommandozeile (Strg+Shift+P) und suche:
+    //   "Extensions: Show Recommended Extensions"
+    // ─────────────────────────────────────────────────────────────────────────
+    "recommendations": [
+        // ── Rust ─────────────────────────────────────────────────────────────
+        // Rust Analyzer: Autocomplete, Fehlermeldungen, Refactoring, Inlay Hints
+        "rust-lang.rust-analyzer",
+
+        // Crates: Zeigt in Cargo.toml an ob Abhängigkeiten aktuell sind
+        "serayuzgur.crates",
+
+        // Even Better TOML: Syntaxhervorhebung für Cargo.toml
+        "tamasfe.even-better-toml",
+
+        // ── QML / Qt ─────────────────────────────────────────────────────────
+        // QML Syntaxhervorhebung und Snippets
+        "bbenoist.qml",
+
+        // Qt QML Formatter
+        "ysfelix.qml-formatter",
+
+        // ── Git ───────────────────────────────────────────────────────────────
+        // GitLens: Zeigt wer wann was geändert hat (git blame direkt im Editor)
+        "eamodio.gitlens",
+
+        // Git Graph: Visueller Git-Verlauf
+        "mhutchie.git-graph",
+
+        // ── Shell / Paketierung ───────────────────────────────────────────────
+        // Bash IDE: Autocomplete und Fehlerprüfung für .sh Skripte
+        "mads-hartmann.bash-ide-vscode",
+
+        // ShellCheck: Warnt vor typischen Bash-Fehlern (build-deb.sh etc.)
+        "timonwong.shellcheck",
+
+        // ── Allgemein ─────────────────────────────────────────────────────────
+        // Error Lens: Fehlermeldungen direkt in der Zeile anzeigen
+        "usernamehw.errorlens",
+
+        // Better Comments: Farbt TODO, FIXME, NOTE etc. ein
+        "aaron-bond.better-comments",
+
+        // Indent Rainbow: Einrückungen farbig markieren
+        "oderwat.indent-rainbow",
+
+        // TODO Highlight: Zeigt TODO/FIXME im Code hervor
+        "wayou.vscode-todo-highlight",
+
+        // ── Markdown ──────────────────────────────────────────────────────────
+        // Markdown Preview Enhanced: README besser lesen
+        "shd101wyy.markdown-preview-enhanced",
+
+        // ── GitHub Actions ────────────────────────────────────────────────────
+        // GitHub Actions: Syntaxprüfung für build-deb.yml
+        "github.vscode-github-actions",
+
+        // ── Optional: KI-Unterstützung ────────────────────────────────────────
+        // GitHub Copilot (benötigt Abo)
+        // "github.copilot"
+    ]
+}
