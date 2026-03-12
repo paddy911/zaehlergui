@@ -30,6 +30,9 @@ chrono          = { version = "0.4", features = ["serde"] }
 # Betriebssystem-Pfade
 dirs            = "5.0"
 
+# Datei-Dialoge (Öffnen/Speichern)
+rfd             = "0.14"
+
 # Fehlerbehandlung
 anyhow          = "1.0"
 

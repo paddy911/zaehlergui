@@ -14,7 +14,8 @@ fn main() -> anyhow::Result<()> {
     eframe::run_native(
         "Verbrauchsmanager",
         optionen,
-        Box::new(|cc| Ok(Box::new(app::VerbrauchsApp::neu(cc)))),
+        // eframe 0.27: AppCreator erwartet Box<dyn App>, kein Result
+        Box::new(|cc| Box::new(app::VerbrauchsApp::neu(cc)) as Box<dyn eframe::App>),
     )
     .map_err(|e| anyhow::anyhow!("GUI-Fehler: {e}"))
 }

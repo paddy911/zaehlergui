@@ -355,8 +355,8 @@ impl VerbrauchsApp {
                             .save_file()
                         {
                             if let Some(db) = &self.db {
-                                match db.export_csv(&pfad) {
-                                    Ok(_)  => { self.status = format!("✅ CSV exportiert: {}", pfad.display()); self.hat_fehler = false; }
+                                match db.export_csv(pfad.as_path()) {
+                                    Ok(())  => { self.status = format!("✅ CSV exportiert: {}", pfad.display()); self.hat_fehler = false; }
                                     Err(e) => { self.status = format!("❌ {e}"); self.hat_fehler = true; }
                                 }
                             }
@@ -374,8 +374,8 @@ impl VerbrauchsApp {
                             .save_file()
                         {
                             if let Some(db) = &self.db {
-                                match db.export_xlsx(&pfad) {
-                                    Ok(_)  => { self.status = format!("✅ Excel exportiert: {}", pfad.display()); self.hat_fehler = false; }
+                                match db.export_xlsx(pfad.as_path()) {
+                                    Ok(())  => { self.status = format!("✅ Excel exportiert: {}", pfad.display()); self.hat_fehler = false; }
                                     Err(e) => { self.status = format!("❌ {e}"); self.hat_fehler = true; }
                                 }
                             }
