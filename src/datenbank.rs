@@ -117,6 +117,27 @@ impl VerbrauchsDatenbank {
         Ok(self.conn.query_row(&sql, [], |r| r.get(0))?)
     }
 
+    /// Gibt die Differenz zwischen dem letzten und vorletzten Eintrag zurück.
+    /// Einträge werden nach Datum (DESC) und dann nach ID (DESC) sortiert.
+    /// Gibt `None` zurück, wenn weniger als 2 Einträge vorhanden sind.
+    pub fn letzter_zuwachs(&self, art: Verbrauchsart) -> Result<Option<f64>> {
+        let sql = format!(
+            "SELECT wert FROM {} ORDER BY datum DESC, id DESC LIMIT 2",
+            art.tabelle()
+        );
+        let mut stmt = self.conn.prepare(&sql)?;
+        let werte: Vec<f64> = stmt
+            .query_map([], |row| row.get(0))?
+            .filter_map(|r| r.ok())
+            .collect();
+
+        if werte.len() == 2 {
+            Ok(Some(werte[0] - werte[1]))
+        } else {
+            Ok(None)
+        }
+    }
+
     pub fn dateigroesse_kb(&self) -> u64 {
         std::fs::metadata(&self.pfad).map(|m| m.len() / 1024).unwrap_or(0)
     }

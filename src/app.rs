@@ -139,6 +139,8 @@ impl VerbrauchsApp {
             Verbrauchsart::Gas    => self.gas_daten.clone(),
         };
         let summe = daten.iter().map(|e| e.wert).sum::<f64>();
+        let zuwachs = self.db.as_ref()
+            .and_then(|db| db.letzter_zuwachs(art).ok().flatten());
 
         ui.columns(2, |cols| {
             // ── Linke Spalte: Eingabe + Statistik ─────────────────────────────
@@ -205,6 +207,17 @@ impl VerbrauchsApp {
                         ui.end_row();
                         ui.label("Einträge:");
                         ui.label(format!("{}", daten.len()));
+                        ui.end_row();
+                        ui.label("Δ Letzter Eintrag:");
+                        match zuwachs {
+                            Some(diff) => {
+                                let prefix = if diff >= 0.0 { "+" } else { "" };
+                                let diff_farbe = if diff >= 0.0 { farbe } else { ROT };
+                                ui.colored_label(diff_farbe,
+                                    format!("{prefix}{:.3} {}", diff, art.einheit()));
+                            }
+                            None => { ui.label("–"); }
+                        }
                         ui.end_row();
                     });
             });
@@ -282,26 +295,47 @@ impl VerbrauchsApp {
             ui.heading("📊 Gesamtstatistik");
             ui.add_space(4.0);
 
+            // Differenz zum vorherigen Eintrag vorberechnen
+            let zuwachs_werte: [Option<f64>; 3] = if let Some(db) = &self.db {
+                [
+                    db.letzter_zuwachs(Verbrauchsart::Strom).ok().flatten(),
+                    db.letzter_zuwachs(Verbrauchsart::Wasser).ok().flatten(),
+                    db.letzter_zuwachs(Verbrauchsart::Gas).ok().flatten(),
+                ]
+            } else {
+                [None, None, None]
+            };
+
             egui::Grid::new("gesamt_statistik")
-                .num_columns(4)
+                .num_columns(5)
                 .spacing([24.0, 6.0])
                 .show(ui, |ui| {
                     ui.strong("");
                     ui.strong("Gesamt");
                     ui.strong("Einheit");
                     ui.strong("Einträge");
+                    ui.strong("Δ Letzter Eintrag");
                     ui.end_row();
 
-                    for (art, farbe, daten) in [
+                    for (i, (art, farbe, daten)) in [
                         (Verbrauchsart::Strom,  STROM_FARBE,  &self.strom_daten),
                         (Verbrauchsart::Wasser, WASSER_FARBE, &self.wasser_daten),
                         (Verbrauchsart::Gas,    GAS_FARBE,    &self.gas_daten),
-                    ] {
+                    ].iter().enumerate() {
                         let summe = daten.iter().map(|e| e.wert).sum::<f64>();
-                        ui.colored_label(farbe, format!("{} {}", symbol(art), art.label()));
-                        ui.colored_label(farbe, format!("{:.3}", summe));
+                        ui.colored_label(*farbe, format!("{} {}", symbol(*art), art.label()));
+                        ui.colored_label(*farbe, format!("{:.3}", summe));
                         ui.label(art.einheit());
                         ui.label(format!("{}", daten.len()));
+                        match zuwachs_werte[i] {
+                            Some(diff) => {
+                                let prefix = if diff >= 0.0 { "+" } else { "" };
+                                let diff_farbe = if diff >= 0.0 { *farbe } else { ROT };
+                                ui.colored_label(diff_farbe,
+                                    format!("{prefix}{:.3} {}", diff, art.einheit()));
+                            }
+                            None => { ui.label("–"); }
+                        }
                         ui.end_row();
                     }
                 });

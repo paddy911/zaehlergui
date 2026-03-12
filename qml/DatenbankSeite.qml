@@ -25,6 +25,10 @@ Item {
     required property int    stromAnzahl
     required property int    wasserAnzahl
     required property int    gasAnzahl
+    // Differenz zwischen letzten zwei Einträgen (NaN wenn < 2 Einträge)
+    required property double stromZuwachs
+    required property double wasserZuwachs
+    required property double gasZuwachs
 
     // ── Signale ───────────────────────────────────────────────────────────────
     signal neueDb(string pfad)
@@ -224,18 +228,21 @@ Item {
                     model: [
                         { symbol: "⚡", label: "Strom",  einheit: "kWh",
                           summe: seite.stromSumme,  anz: seite.stromAnzahl,
+                          zuwachs: seite.stromZuwachs,
                           farbe: seite.stromFarbe },
                         { symbol: "💧", label: "Wasser", einheit: "m³",
                           summe: seite.wasserSumme, anz: seite.wasserAnzahl,
+                          zuwachs: seite.wasserZuwachs,
                           farbe: seite.wasserFarbe },
                         { symbol: "🔥", label: "Gas",    einheit: "m³",
                           summe: seite.gasSumme,    anz: seite.gasAnzahl,
+                          zuwachs: seite.gasZuwachs,
                           farbe: seite.gasFarbe },
                     ]
 
                     delegate: Rectangle {
                         Layout.fillWidth: true
-                        height: 110
+                        height: 140
                         color:  seite.karteHg
                         radius: 12
                         border.color: seite.grauBorder
@@ -267,6 +274,33 @@ Item {
                                 text:  modelData.anz + " Einträge"
                                 font.pixelSize: 12
                                 color: seite.textGrau
+                            }
+                            // ── Differenz vom letzten Eintrag ─────────────────
+                            RowLayout {
+                                spacing: 4
+                                Text {
+                                    text: "Δ letzter Eintrag:"
+                                    font.pixelSize: 11
+                                    color: seite.textGrau
+                                }
+                                Text {
+                                    visible: !isNaN(modelData.zuwachs) && modelData.anz >= 2
+                                    text: {
+                                        var v = modelData.zuwachs
+                                        var prefix = v >= 0 ? "+" : ""
+                                        return prefix + v.toFixed(3) + " " + modelData.einheit
+                                    }
+                                    font { pixelSize: 12; bold: true }
+                                    color: modelData.zuwachs >= 0
+                                        ? modelData.farbe
+                                        : "#E63946"
+                                }
+                                Text {
+                                    visible: isNaN(modelData.zuwachs) || modelData.anz < 2
+                                    text: "–"
+                                    font.pixelSize: 12
+                                    color: seite.textGrau
+                                }
                             }
                         }
                     }
