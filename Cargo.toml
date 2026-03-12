@@ -5,40 +5,36 @@ edition     = "2021"
 description = "Strom-, Wasser- und Gasverbrauchsmanager mit Qt 6 UI"
 authors     = ["Verbrauchsmanager"]
 
-# ── Binary-Ziel explizit angeben ─────────────────────────────────────────────
 [[bin]]
 name = "verbrauchsmanager"
 path = "src/main.rs"
 
-# ── Laufzeit-Abhängigkeiten ───────────────────────────────────────────────────
 [dependencies]
-# Qt6 Rust-Bindings
-cxx-qt     = "0.6"
-cxx-qt-lib = "0.6"
+# Qt6 Rust-Bindings – 0.8 unterstützt #[qproperty] und #[qinvokable]
+cxx-qt     = "0.8"
+cxx-qt-lib = "0.8"
 
-# Datenbank – SQLite statisch gelinkt (kein extra libsqlite3-dev nötig)
+# Datenbank – SQLite statisch gelinkt
 rusqlite = { version = "0.31", features = ["bundled"] }
 
 # CSV-Export
 csv = "1.3"
 
-# XLSX-Export (korrekter Crate-Name)
+# XLSX-Export
 rust_xlsxwriter = "0.68"
 
 # Datum / Zeit
 chrono = { version = "0.4", features = ["serde"] }
 
-# Betriebssystem-Pfade (Linux: ~/.local/share, Windows: %APPDATA% usw.)
+# Betriebssystem-Pfade
 dirs = "5.0"
 
 # Fehlerbehandlung
 anyhow = "1.0"
 
-# ── Build-Abhängigkeiten (nur zur Compile-Zeit) ───────────────────────────────
 [build-dependencies]
-cxx-qt-build = "0.6"
+cxx-qt-build = "0.8"
 
-# ── Release-Optimierungen ─────────────────────────────────────────────────────
 [profile.release]
 opt-level     = 3
 lto           = true
