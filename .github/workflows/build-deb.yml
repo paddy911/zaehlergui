@@ -107,6 +107,7 @@ jobs:
       - name: "📦 .deb Paket bauen"
         run: |
           chmod +x packaging/scripts/build-deb.sh
+          chmod +x packaging/scripts/check-deps.sh
           bash packaging/scripts/build-deb.sh --skip-compile
 
       # ── Lintian Qualitätsprüfung ───────────────────────────────────────────

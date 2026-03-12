@@ -108,6 +108,12 @@ mkdir -p "$(dirname "$BINARY_DST")"
 cp "$BINARY_SRC" "$BINARY_DST"
 success "Binary kopiert nach ${BINARY_DST}"
 
+# ── QML-Dateien mitkopieren ───────────────────────────────────────────────────
+QML_DST="${PAKET_DIR}/usr/share/verbrauchsmanager/qml"
+mkdir -p "$QML_DST"
+cp "${PROJECT_ROOT}"/qml/*.qml "$QML_DST/"
+success "QML-Dateien kopiert nach ${QML_DST}"
+
 # ── 4. Dateiberechtigungen setzen ─────────────────────────────────────────────
 step "Dateiberechtigungen setzen"
 

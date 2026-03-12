@@ -1,30 +1,17 @@
 // build.rs – cxx-qt-build 0.8
-// In 0.8 hat QmlModule eigene Typen:
-//   uri       → QmlUri   (via .into())
-//   qml_files → Vec<QmlFile>  (via .into() pro Eintrag)
-//   rust_files→ Vec<RustFile> (via .into() pro Eintrag)
-// Keine generischen Parameter, kein Default::default()
-// qml_module() erwartet eine Referenz: &QmlModule
+// In 0.8 gibt es kein qml_module() mehr auf CxxQtBuilder.
+// Das QML-Modul wird automatisch über das Attribut
+//   #[cxx_qt::qobject(qml_uri = "...", qml_version = "1.0")]
+// in bridge.rs registriert.
+// build.rs muss nur noch die Bridge-Datei mit .file() angeben.
 
-use cxx_qt_build::{CxxQtBuilder, QmlModule};
+use cxx_qt_build::CxxQtBuilder;
 
 fn main() {
     CxxQtBuilder::new()
         .qt_module("Quick")
         .qt_module("QuickControls2")
         .qt_module("Sql")
-        .qml_module(&QmlModule {
-            uri:           "com.verbrauchsmanager".into(),
-            version_major: 1,
-            version_minor: 0,
-            qml_files: vec![
-                "qml/main.qml".into(),
-                "qml/EingabeSeite.qml".into(),
-                "qml/DatenbankSeite.qml".into(),
-            ],
-            rust_files: vec![
-                "src/bridge.rs".into(),
-            ],
-        })
+        .file("src/bridge.rs")
         .build();
 }
