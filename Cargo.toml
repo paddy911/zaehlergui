@@ -2,7 +2,7 @@
 name        = "verbrauchsmanager"
 version     = "1.0.0"
 edition     = "2021"
-description = "Strom-, Wasser- und Gasverbrauchsmanager mit Qt 6 UI"
+description = "Strom-, Wasser- und Gasverbrauchsmanager"
 authors     = ["Verbrauchsmanager"]
 
 [[bin]]
@@ -10,30 +10,28 @@ name = "verbrauchsmanager"
 path = "src/main.rs"
 
 [dependencies]
-# Qt6 Rust-Bindings – 0.8 unterstützt #[qproperty] und #[qinvokable]
-cxx-qt     = "0.8"
-cxx-qt-lib = "0.8"
+# GUI – reines Rust, keine C++ Bindings nötig
+eframe          = { version = "0.27", features = ["default"] }
+egui            = "0.27"
+egui_extras     = { version = "0.27", features = ["image"] }
 
 # Datenbank – SQLite statisch gelinkt
-rusqlite = { version = "0.31", features = ["bundled"] }
+rusqlite        = { version = "0.31", features = ["bundled"] }
 
 # CSV-Export
-csv = "1.3"
+csv             = "1.3"
 
 # XLSX-Export
 rust_xlsxwriter = "0.68"
 
 # Datum / Zeit
-chrono = { version = "0.4", features = ["serde"] }
+chrono          = { version = "0.4", features = ["serde"] }
 
 # Betriebssystem-Pfade
-dirs = "5.0"
+dirs            = "5.0"
 
 # Fehlerbehandlung
-anyhow = "1.0"
-
-[build-dependencies]
-cxx-qt-build = "0.8"
+anyhow          = "1.0"
 
 [profile.release]
 opt-level     = 3
